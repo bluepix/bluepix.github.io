@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[译] 如何制造正确执行多进程程序的多处理器计算机&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.eeb34cdc9585c78a18c67ded84862021d4debb2514af02df2c00e4526a920d92b5182f70b67d9c75a35111653afc5932.css" integrity="sha384-7rNM3JWFx4oYxn3thIYgIdTeuyUUrwLfLADkUmqSDZK1GC9wtn2cdaNREWU6/Fky"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div></section><div id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">[译] 如何制造正确执行多进程程序的多处理器计算机</h1><p class="article date">2020-03-14</p></section><article class="article markdown-body"><blockquote>
+<p><strong>注：</strong> 这篇于 1979 年 9 月发表在 <em>IEEE Transactions on Computers</em> 上的文章, 给出了顺序一致性的定义. 这一贡献与其它众多成就一起, 为 Leslie Lamport 赢得了 2013 年的图灵奖. 受知识和语言水平所限, 翻译中存在很多生硬或不准确之处, 仅供参考. 原文链接：<a href="http://lamport.azurewebsites.net/pubs/pubs.html#multi">http://lamport.azurewebsites.net/pubs/pubs.html#multi</a></p>
+</blockquote>
+<p><em><strong>摘要</strong></em> - <strong>很多大型串行计算机执行操作的顺序都与程序所定义的不同. 一次执行,只要其产生的结果与按顺序执行程序步骤所产生的结果相同, 就是正确的. 对一台多处理器计算机而言, 每个处理器都这样正确地执行, 并不能保证整个程序的执行正确. 这篇文章给出了保证计算机正确执行多进程程序所须的附加条件.</strong></p>
+<p><em><strong>索引词</strong></em> - <strong>计算机设计, 并发计算, 硬件正确性, 多进程, 并行处理</strong></p>
+<p>高速处理器执行操作 (operations) 的实际顺序, 可能有别于程序所定义的顺序. 处理器只须满足如下条件即可保证执行的正确性：一次执行的结果, 与按照程序定义的顺序执行操作所产生的结果相同. 满足此条件的处理器则可称为是<em>顺序的</em> (<em>sequential</em>) . 现在, 考虑一台由若干个访问公共内存的顺序处理器构成的计算机. 要为这样一台计算机设计多进程算法[1]-[3]并证明其正确性, 惯用的方法是假设以下条件是满足的：任意执行的结果, 都如同所有处理器上的操作都按某种串行顺序 (sequential order) 执行, 并且每一个单独的处理器的操作都按照其程序所定义的顺序在这个序列中出现. 满足这个条件的多处理器称为是<em>顺序一致的</em> (<em>sequentially consistent</em>) . 每一个单独的处理器的顺序性, 不能保证多处理器计算机是顺序一致的. 在这篇简要的注记中, 我们描述了一种通过内存模块连接多个顺序处理器的方法, 此方法可以确保其构成的多处理器计算机是顺序一致的.</p>
+<p>我们假设此计算机由一组处理器和内存模块组成, 各处理器之间仅通过内存模块通信. (任何特殊通信寄存器可以看作是单独的内存模块.) 我们只关心那些向内存模块发送取(fetch)或存(store)请求的处理器操作. 我们假设每个处理器会发起一系列这种请求. (有时处理器必须等待请求的执行, 但我们不必关心这些.)</p>
+<p>我们考虑一个简单的二进程互斥协议来说明问题. 每个进程包含一个<em>临界区</em> (<em>critical section</em>), 此协议的目的是保证在任何时间, 都只有一个进程可能在执行其临界区内的代码. 此协议如下.</p>
+<p><strong>进程 1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">a :<span style="color:#f92672">=</span> 1;
+<span style="color:#66d9ef">if</span> b <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">then</span> critical section;
+                a :<span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+         <span style="color:#66d9ef">else</span>    ...    <span style="color:#66d9ef">fi</span>
+</code></pre></div><p><strong>进程 2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">b :<span style="color:#f92672">=</span> 1;
+<span style="color:#66d9ef">if</span> a <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">then</span> critical section;
+                b :<span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+         <span style="color:#66d9ef">else</span>    ...    <span style="color:#66d9ef">fi</span>
+</code></pre></div><p><strong>else</strong> 语句包含了某种确保最终能访问临界区的机制, 但这与讨论无关. 易于证明,此协议可以确保临界区的互斥访问. (此证明留给读者, 作为使用[2]和[3]中的断言技术的极佳练习.) 因此, 若此二进程程序在一台顺序一致的多处理器计算机上执行, 两个处理器不可能在同一时间都在执行其临界区代码.</p>
+<p>我们首先观察到, 一个顺序处理器可以以任意顺序执行进程 1 中 ”a := 1“<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup> 和 &ldquo;取 b&rdquo; 这两个操作. (若单独考虑进程 1 的程序本身, 这两个操作以何种顺序执行无关紧要.) 但是很容易看出, 如果先执行 &ldquo;取 b&rdquo; 的操作, 会导致一个错误 —— 两个进程可以同时执行临界区代码. 这直接揭示了我们对多处理器计算机的第一个要求.</p>
+<p><em>要求 R1</em>：每个处理器要按照其程序所定义的顺序发起内存请求.</p>
+<p>满足要求 R1 的困难之处在于, 一个值的存操作只可能在计算出这个值之后进行. 处理器经常还不知道前置的存请求所存入的值,就已经准备好了发起一次取请求. 为了尽量减少等待, 处理器向内存模块发起存请求时可以不指定要存入的值. 当然, 内存模块只有在接收到存入值之后才能实际执行存操作.</p>
+<p>要求 R1 并不足以确保执行正确. 要展示这一点, 设想每个内存模块都有若干个端口, 每个端口可服务于一个处理器(或 I/O 通道). 令 a 和 b 的值存储在不同的内存模块, 并考虑以下事件序列.</p>
+<ol>
+<li>处理器 1 向内存模块 1 的相应端口发送了 &ldquo;a := 1&rdquo; 的请求. 此内存模块当前正忙于执行另外的某个处理器(或 I/O 通道)的操作.</li>
+<li>处理器 1 向内存模块 2 的相应端口发送了 &ldquo;取 b&rdquo; 的请求. 这个内存模块是空闲的, 请求开始执行.</li>
+<li>处理器 2 向内存模块 2 发送了 &ldquo;b := 1&rdquo; 的请求, 这个请求会在处理器 1 的 “取 b” 请求完成之后执行.</li>
+<li>处理器 2 向内存模块 1 发送了 &ldquo;取 a&rdquo; 的请求, 此模块当前仍然忙碌.</li>
+</ol>
+<p>于是, 现在有两个操作等待内存模块 1 的执行. 如果处理器 2 的 “取 a” 操作先执行, 则两个进程可以同时进入到其临界区, 协议失效. 如果内存模块采用 Round Robin 调度算法来服务其各个端口, 就可能出现此情况.</p>
+<p>在此场景中, 只有发往内存模块 1 的两个请求没有按照接收的顺序执行才会引发错误. 这揭示了以下要求.</p>
+<p><em>要求 R2</em>：所有处理器对单独一个内存模块发起的内存请求, 都在一个先进先出 (FIFO) 队列中接受服务. 内存请求的发起包括将此请求加入到队列.</p>
+<p>条件 R2<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup> 表明, 一个处理器, 只有在其当前请求已进入队列之后, 才能发起进一步的内存请求. 所以, 如果队列已满, 则处理器必须等待. 如果两个及以上的处理器同时试图向队列中加入请求, 则它们得到服务的顺序是无关紧要的.</p>
+<p><em>注</em>. 如果一个取操作请求某个内存位置的内容, 而队列中已经有一个针对此位置的写请求, 则取操作不需要进入队列. 可以直接返回队列中上一个这样的写请求的值.</p>
+<p>要求 R1 和 R2 保证了, 如果单独的处理器是顺序的, 则整个多处理器计算机是顺序一致的. 要证明这一点, 我们首先引入内存请求之间的一个关系 -&gt;. 定义 A -&gt; B 当且仅当 1) A 和 B 由同一个处理器发起, 并且 A 在 B 之前发起, 或 2) A 和 B 对同一个内存模块发起, 并且 A 先于 B 进入到队列中 (因而先于 B 得到执行). 容易看出 R1 和 R2 可以导出 -&gt; 是内存请求集合上的一个偏序关系<sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>. 基于每个处理器的顺序性, 就可以证明以下结果：每个取或存操作取出或存入的值, 同于按照任意符合 A -&gt; B 的顺序依次执行所有操作, 说明 A 先于 B 执行<sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup>. 这进而证明了多处理器计算机的顺序一致性.</p>
+<p>要求 R2 声明一个内存模块的请求队列必须以先进先出 (FIFO) 的顺序得到服务. 这表示如果其队列头部的请求是一个存请求, 且尚未收到要存入的值, 内存模块就必须保持空闲. 条件 R2 可以弱化为允许内存模块在这种情景下服务其它请求. 我们只需要要求所有对同一个内存单元 (cell) 的请求必须按照它们在队列中出现的顺序得到服务. 对不同内存单元的请求可以不按序服务. 这一执行策略逻辑上等同于将每个内存单元看作单独的内存模块, 拥有其自己的请求队列, 因而仍然保留了顺序一致性. (这些逻辑上的内存模块可能共享某些硬件, 这会影响它们服务请求的速率和队列的容量, 但不影响顺序一致的逻辑属性.)</p>
+<p>确保顺序一致性的要求排除了一些可以用来提高单个顺序处理器速度的技术. 对某些应用来说, 顺序一致性可能不足以抵偿降低处理器速度的代价. 在这种情况下, 必须意识到, 不能依赖传统的多进程算法设计方法来编写正确执行的程序. 必须在机器指令代码的最底层设计用于处理器同步的协议, 而验证其正确性将是一项艰巨的任务.</p>
+<p><strong>参考文献</strong></p>
+<p>[1] E. W. Dijkstra, &ldquo;Hierarchical ordering of sequential processes,&rdquo; <em>Acta Informatica</em>, vol. 1, pp. 115-138, 1971.</p>
+<p>[2] L. Lamport, &ldquo;Proving the correctness of multiprocess programs,&rdquo; <em>IEEE Trans. Software Eng.</em>, vol. SE-3, pp. 125-143, Mar. 1977.</p>
+<p>[3] S. Owicki and D. Gries, &ldquo;Verifying properties of parallel programs: an axiomatic approach,&rdquo; <em>Commun. Assoc. Comput. Mach.</em>, vol. 19, pp. 279-285, May 1976.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>原文为 b := 1, 疑误 <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>原文为 R1, 疑误 <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>并且是严格偏序关系 <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p>原文为 &hellip; each fetch and store operation fetches or stores the same value as if all the operations were executed sequentially in any order such that A -&gt; B implies that A is executed before B. 个人的理解是: 将偏序关系 -&gt; 扩展为任意的全序关系, 让所有操作按照此关系定义的顺序执行, 记为执行 E1, 若某次执行 E2 每个存取操作的值与 E1 中相同, 则 A -&gt; B 表示在 E2 中 A 先于 B 执行. <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%BF%BB%E8%AF%91/>翻译</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/>内存模型</a></section></div></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">诗川的笔记</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section></div>
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>并发 on 诗川的笔记</title>
+    <link>/tags/%E5%B9%B6%E5%8F%91/</link>
+    <description>Recent content in 并发 on 诗川的笔记</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 14 Mar 2020 17:47:46 +0800</lastBuildDate>
+    
+        <atom:link href="/tags/%E5%B9%B6%E5%8F%91/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>[译] 如何制造正确执行多进程程序的多处理器计算机</title>
+      <link>/posts/make-mp-computer-correctly/</link>
+      <pubDate>Sat, 14 Mar 2020 17:47:46 +0800</pubDate>
+      
+      <guid>/posts/make-mp-computer-correctly/</guid>
+      <description>注： 这篇于 1979 年 9 月发表在 IEEE Transactions on Computers 上的文章, 给出了顺序一致性的定义. 这一贡献与其它众多成就一起, 为 Leslie Lamport 赢得了 2013 年的图灵奖. 受知识和语言水平所限</description>
+      
+    </item>
+    
+  </channel>
+</rss>
