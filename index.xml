@@ -6,7 +6,8 @@
     <description>Recent content on 诗川的笔记</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 14 Mar 2020 17:47:46 +0800</lastBuildDate>
+    <copyright>©2020 bluepix</copyright>
+    <lastBuildDate>Mon, 16 Mar 2020 08:28:56 +0800</lastBuildDate>
     
         <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +15,7 @@
     <item>
       <title>Posts</title>
       <link>/posts/</link>
-      <pubDate>Sat, 14 Mar 2020 17:47:46 +0800</pubDate>
+      <pubDate>Mon, 16 Mar 2020 08:28:56 +0800</pubDate>
       
       <guid>/posts/</guid>
       <description></description>

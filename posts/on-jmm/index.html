@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Java 内存模型入门&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.1cb84ec14166626c150a4df437227d31bbecc8cb48d56a08c04200adf5e06564017428aa1973540f49d1d293f7ac04a2.css" integrity="sha384-HLhOwUFmYmwVCk30NyJ9MbvsyMtI1WoIwEIArfXgZWQBdCiqGXNUD0nR0pP3rASi"><link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">Java 内存模型入门</h1><p class="article date">2020-03-16</p></section><article class="article markdown-body">
+<section class="markdown-body toc">
+    <header>
+    <h2>目录</h2>
+    </header>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#引言">引言</a></li>
+    <li><a href="#了解有关概念">了解有关概念</a>
+      <ul>
+        <li><a href="#什么是内存模型">什么是内存模型</a></li>
+        <li><a href="#高级语言内存模型">高级语言内存模型</a></li>
+        <li><a href="#java-内存模型简介">Java 内存模型简介</a></li>
+      </ul>
+    </li>
+    <li><a href="#几种典型的内存模型">几种典型的内存模型</a>
+      <ul>
+        <li><a href="#顺序一致性模型">顺序一致性模型</a></li>
+        <li><a href="#total-store-order-模型">Total Store Order 模型</a></li>
+        <li><a href="#release-consistency-模型">Release Consistency 模型</a></li>
+      </ul>
+    </li>
+    <li><a href="#java-内存模型解说">Java 内存模型解说</a>
+      <ul>
+        <li><a href="#java-内存模型的要求">Java 内存模型的要求</a></li>
+        <li><a href="#过渡模型-happens-before-内存模型">过渡模型: Happens-Before 内存模型</a></li>
+        <li><a href="#因果关系-causality-要求">因果关系 (Causality) 要求</a></li>
+        <li><a href="#执行的迭代验证">执行的迭代验证</a></li>
+        <li><a href="#final-字段">Final 字段</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+    <li><a href="#主要参考文献">主要参考文献</a></li>
+  </ul>
+</nav>
+</section>
+<p><a name="top"></a></p>
+<h2 id="引言">引言</h2>
+<p>Java 内存模型 (Java Memory Model, JMM) 是 Java 并发编程中一个较为底层的话题, Java 并发编程中的各种上层策略, 如安全发布 (Safe publication)、使用同步 (synchronization) 等, 其有效性都建立在 JMM 的基础上, 对 JMM 做一些必要的了解, 可以帮助我们更好地理解和使用这些上层策略.</p>
+<p>但不可否认, Java 语言规范 (JLS) 中关于 JMM 的内容, 尤其是其正式定义部分, 个人感觉阅读起来较为吃力. 抛开个人水平不谈, 我想可能有以下三个原因导致这部分在客观上相对 &ldquo;难读&rdquo;: 一是 JLS 本身的性质要求其表述严谨、准确、抽象, 二是理解这些内容要求读者具备一些内存模型、关系理论方面的准备知识, 三是, 现行的 JMM 是一个<a href="http://www.cs.umd.edu/~pugh/java/memoryModel/archive/index.html"target="_blank">长期讨论研究</a>的结果, 而 JLS 中只能呈现最终的、正式的 &ldquo;干货&rdquo;, 阅读时一定程度上面临上下文的缺失.</p>
+<p>当然, 事实上对大多数开发人员来说. 只要不是开发虚拟机或编译器, 也不必执着于了解 JMM 的全部细节. 正因如此, 多数面向程序开发人员的著作, 如 <em>Java Concurrency in Practice</em>, 都省略了 JMM 的严格表述.</p>
+<p>本文试图对 JMM 做一个初步介绍, 主要内容仍限于普通开发者需要了解的部分, 并附加一些我认为必要的背景知识, 同时也包含了一些 JLS 中正式定义的引用和解释. 以入门级水平写入门的文章当然是不自量力, 因此, 这只能当作是我最近学习 JMM 的一个记录, 舛误之处必定不少, 聊备参考.</p>
+<p>我们将首先介绍一般意义上的内存一致性模型的概念, 在此基础上对 Java 内存模型做简要说明, 随后, 通过列举几种典型的内存模型加深理解, 最后围绕 JMM 的定义做一些相对深入的 &ldquo;解说&rdquo;,</p>
+<h2 id="了解有关概念">了解有关概念</h2>
+<h3 id="什么是内存模型">什么是内存模型</h3>
+<p><em>内存一致性模型</em> (<em>Memory Consistenc Model</em>), 或简称<em>内存模型</em> (<em>Memory Model</em>), 是源于并行计算机架构设计的一个概念. 要理解内存模型的必要性, 首先要了解, 相比于单 (核) 处理器系统, 在共享内存的多 (核) 处理器上执行并发程序, 会产生哪些不符合 (编程人员) 直觉的结果.</p>
+<p>执行单线程程序是一个相对简单的问题. 我们知道, 计算机程序需要由编译系统转化为二进制指令交给处理器执行, 这些指令由处理器的指令集架构 (ISA) 定义, 在 ISA 模型中, 处理器提供的服务就是按顺序逐条执行程序定义的指令. 但实际上, 为了提高执行效率, 处理器的微架构设计会借重于大量的优化手段, 例如缓存 (Cache)、分支预测 (Branch Prediction)、动态调度 (Dynamic Scheduling) 等, 这些优化可能导致程序定义的操作并行甚至打乱顺序执行. 但对硬件设计者而言, 一个基本要求是, 必须保证每次执行都产生<em>如同顺序执行</em> (<em>as-if-serial</em>) 的结果, 在满足此要求的前提下, 上述优化都是允许的. 直观地看, 如果两个操作没有访问同一个内存地址, 且相互之间没有逻辑依赖关系, 则交换这两个操作的执行顺序不会影响最终结果. 对程序编写者来说, as-if-serial 约定无形中为分析和设计程序提供了很大便利, 因为程序顺序即执行顺序, 换句话说, 保证了程序顺序逻辑的正确, 即保证了执行结果的正确.</p>
+<blockquote>
+<p><em>注</em>: 一方面, 即使对多处理器计算机来说, 每个线程在独立的一个 CPU 上运行也不是必然的情况, 但确实是合法的执行模式; 另一方面, 即使在单处理器上, 多线程程序的运行也面临着与多处理器环境相同的问题. 因此在讨论内存模型时, 我们认为处理器与线程的作用是等同的, 故行文中没有刻意追求统一.</p>
+</blockquote>
+<p>不过, 当同样的优化发生在多线程环境, 问题就有些复杂了. 可以用一个简单的例子来说明这一问题: 假设共享内存的两个处理器分别执行如下所示代码 (用于实现互斥的 Dekker 算法也包含类似的逻辑):</p>
+<p><strong>例 1.</strong> 多处理器上乱序执行的影响.</p>
+<dl>
+<dt>初始条件</dt>
+<dd>a = b = 0</dd>
+</dl>
+<p><strong>处理器 P1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;One!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><strong>处理器 P2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>a <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Two!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>容易看出, 以上程序可能有以下执行结果:</p>
+<ol>
+<li>只打印出字符串 &ldquo;One!&quot;;</li>
+<li>只打印出字符串 &ldquo;Two!&quot;;</li>
+<li>未打印出任何内容.</li>
+</ol>
+<p>那么可不可能出现第四种结果, 即同时打印出 &ldquo;One!&rdquo; 和 &ldquo;Two!&rdquo; 两个字符串呢? 直觉上, 显然不可能. 假设一次执行打印了 &ldquo;One!&quot;, 说明 P1 读到了 b 的值为0, 那么 P1 已经执行了 a = 1 的操作, 而 P2 还没有执行 b = 1 的操作, 当 P2 去读 a 的时候, 其值已经为 1, 因此不会打印 &ldquo;Two!&quot;. 反之亦然.</p>
+<p>这是个程序编写者会欢迎的结论, 简单, 符合直觉. 但实际情况是, 多数真实的硬件 (如 x86 系统) 会允许第四种结果出现.</p>
+<p>问题出在哪儿呢? 实际上, 得出上面这个结论是因为我们习惯了前述在单线程环境分析问题的思维方式, 即所有操作都可看作是按程序所定义的顺序执行的, 这个约定与直觉是如此相符, 以至于我们自然地将其推广到了多处理器环境. 然而, “可看作” 不等于 “是”, 因而, <em>单个处理器满足 as-if-serial 要求, 不能保证整个计算机具有相同的属性</em>. 设想有这样一台计算机, 它的处理器 P1 发现对 a 的写操作与对 b 的读操作既不针对同一个内存地址, 也没有逻辑依赖关系, 为了优化执行性能, 决定允许 (看上去) 先执行 b == 0, 再执行 a = 1, 于是就有可能形成如下顺序的执行 (这里我们用另外的变量 print1 和 print2 分别保存读 b 和 a 的结果):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">P1: <span style="color:#66d9ef">boolean</span> print1 <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">==</span> 0<span style="color:#f92672">);</span>
+P2: b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+P2: <span style="color:#66d9ef">boolean</span> print2 <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>a <span style="color:#f92672">==</span> 0<span style="color:#f92672">);</span>
+P1: a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+</code></pre></div><p>可见 print1 和 print2 的值均为 <code>true</code>, 即两个线程都会执行打印操作. 我们可以看到, P1 乱序执行的实质, 是 <em>P2 没有及时观察到 P1 对共享内存 a 的写操作</em>.</p>
+<p>当然, 允许上述乱序执行是一个设计上的选择, 我们能不能禁止这一操作, 使系统不能出现第四种结果呢? 完全可以, 这种约定我们后面还会谈到, 现在只须知道, &ldquo;是否允许第四种结果出现&rdquo;, 或者说 “是否允许对不同内存地址的访问呈现出与程序定义不同的顺序” 这类问题, 正是内存模型要回答的. 内存模型不止一种, 不同的模型对此问题的回答可能不同.</p>
+<p>各种文献中对内存模型的定义不尽相同, 一个比较笼统的定义是:</p>
+<dl>
+<dt>内存模型 (定义 1)</dt>
+<dd>一组规则, 定义了在执行访问共享内存的多线程程序时, 什么样的行为是允许的.<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup></dd>
+</dl>
+<p>这种说法略显含混, 不易理解. 既是讨论内存模型, 则所谓行为, 即是对共享内存的访问, 从上面的例子我们看到, 不同的内存模型导致的行为差别, 是执行呈现出不同的顺序, 所以可以更明确一点:</p>
+<dl>
+<dt>内存模型 (定义 2)</dt>
+<dd>一组规则, 定义了不同线程对共享内存的访问操作可以呈现出的顺序.</dd>
+</dl>
+<p>这个定义要清楚一些, 但尚嫌没有体现出本质: 执行顺序是一个总体的表现, 上面提到, 其实质是<em>一个处理器何时可以观察到另一个处理器写入的数据</em>. 而观察到写入数据的唯一途径, 是通过读操作, 我们也可以说内存模型定义了<em>读操作可以读到哪些值</em>, 更准确一点:</p>
+<dl>
+<dt>内存模型 (定义 3)</dt>
+<dd>一组规则, 定义了在多线程程序的执行中, 每一个对共享内存的读操作可以返回哪些写操作写入的值.</dd>
+</dl>
+<p>对于一个多线程程序, 当给出特定的输入数据时, 内存模型决定了执行中每次读操作可能返回的值, 以及可能的内存最终状态. 需要注意, 与单线程程序不同, 由于多个线程可能以不同的方式交错执行操作, 可能存在多种正确的行为 (这里的正确是指符合内存模型, 并不保证程序功能上的正确), 这一点在上面的例子中已经体现.</p>
+<p>因为优化所导致的某些执行结果 (如上面例子中的第四种结果) 可能是我们不期望出现的, 如果内存模型允许这一结果, 则编写程序或编译器时要通过额外的方法去避免, 若不允许, 则硬件设计需要禁止其发生. 由此可见, 内存模型可以看作程序与硬件之间划分责任的一个<em>协议</em>. 对硬件系统 (包括处理器、内存等) 的设计者, 它施加约束, 描述什么样的优化是允许的; 对程序设计者, 它提供保证, 描述什么样的行为是可能出现的. 不同的角色对内存模型的期望重点不同, 例如:</p>
+<p><strong>程序开发者</strong></p>
+<ol>
+<li>编写正确的并行程序的明确规则</li>
+<li>易于推导, 不应出现明显的违反直觉的特性</li>
+<li>表达尽可能并发的能力</li>
+</ol>
+<p><strong>语言/编译器设计者</strong></p>
+<ol>
+<li>尽可能地允许编译器执行优化</li>
+<li>尽可能地允许实现的灵活性</li>
+<li>不良程序的行为可以不予定义</li>
+</ol>
+<p><strong>硬件/系统设计者</strong></p>
+<ol>
+<li>尽可能地允许硬件优化</li>
+<li>最小化硬件需求/负载</li>
+<li>易于实现、验证</li>
+</ol>
+<p>一个设计良好的内存模型要在以上这些诉求之间寻求平衡.</p>
+<p>作为协议, 内存模型描述的是 <em>行为表现</em>, 而非实现细节, 它将线程与内存的交互抽象为存储操作 (store) 和加载操作 (load), 并描述两者间的顺序关系, 但它不定义诸如内存如何共享、是否存在缓存、缓存一致性协议、乱序或并行执行由什么引起等, 这些是实现要关心的问题.</p>
+<p>一个内存模型 MC 给出的规则将程序的执行划分为两类: 一类是遵守此内存模型的执行 (MC 执行), 一类是不遵守此内存模型的执行 (非 MC 执行). 进而划出分了两类实现: 仅允许 MC 执行的实现 (MC 实现), 允许非 MC 执行的实现 (非 MC 实现). 这些概念为比较两个内存模型提供了方便, 例如我们可以说: MC1 执行是 MC2 执行的子集 (说明 MC1 是比 MC2 更严格的内存模型).</p>
+<h3 id="高级语言内存模型">高级语言内存模型</h3>
+<p>上文中我们谈到的主要是底层程序与硬件之间的界面, 事实上, 在用高级语言编写程序时, 程序与系统的界面就上移到了程序与编译器、运行时之间, 因为同样的原因, 我们也需要为这个界面定义内存模型. 高级语言内存模型与硬件内存模型的关系和区别可以用下图表示, 需要注意的是, 这两类内存模型属于不同层面的抽象, 同一系统中高级语言和硬件不一定采用相同类型的内存模型.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="hll-mm.png?width=600"><img class="img" src="hll-mm.png?width=600"
+        alt="hll-mm" width="600"
+        /></a></span><span class="caption"><span class="title">a: 高级语言内存模型 <br> b: 硬件内存模型</span></span></span></p>
+<p>相对于硬件内存模型, 高级语言内存模型的定义要面对两个额外的挑战: 一是很多高级语言具有严格的安全 (safety and security) 特性要求需要满足, 二是编译器所能采用的优化手段相比于硬件要广泛的多.</p>
+<p>很多高级语言在单线程世界产生, 故而其定义中内存模型是缺失的. 这些语言针对编译器和硬件的乱序执行提供了何种程度的保护, 严重依赖于所使用的线程库 (如 pthreads)、采用的编译器以及运行的平台. Java 可能是第一个在其规范中定义了内存模型的主流高级语言 (虽然其初始版本的内存模型存在缺陷), C++ 11 中增加了多线程内存模型定义.</p>
+<h3 id="java-内存模型简介">Java 内存模型简介</h3>
+<p>Java 内存模型定义在 <em><a href="https://docs.oracle.com/javase/specs/"target="_blank">The Java Language Specification (JLS) </a></em> 的第 17 章. 1995 年定义的初始版本的 Java 内存模型被普遍认为存在若干重大缺陷, 不仅禁止了很多运行时优化的使用, 而且没有提供足够强的代码安全保障, 为此, JSR-133 对 Java 内存模型进行了修订, 其内容的规范部分集成到了后续版本的 JLS 中, 从 2004 年发布的 Java 5.0 开始生效.</p>
+<p>和硬件内存模型类似, Java 定义了一组规则, 以此为依据, 可以判断执行中的每次读操作所读取到的写操作是否合法. 从而区分一段给定程序的的某个执行是否合法. 简单地说, 一个线程执行的操作可以分为两部分: 读操作和其它操作. 每一次读操作应当读  到什么值, 由 Java 内存模型规定, 而基于这些读到的值, 独立的 (isolated) 线程应如何执行, 由 JLS 其它部分定义的线程内语义 (intra-thread sementics) 决定.</p>
+<blockquote>
+<p>JSR (及 JLS) 中明确说明: &ldquo;由于这些规范类似于不同硬件体系结构的内存模型, 这些语义被称为 Java 内存模型&rdquo;, 可见 JMM 和硬件内存模型的类比关系. Java 通过提供自己的内存模型, 屏蔽了不同的底层平台内存模型之间的差异, 由 JVM 去处理 JMM 和平台内存模型之间的差异.</p>
+</blockquote>
+<h2 id="几种典型的内存模型">几种典型的内存模型</h2>
+<p>在更深入的了解 Java 内存模型之前, 我们将先简单介绍三种有代表性的内存一致性模型, 来加深对内存一致性模型的感性认识.</p>
+<h3 id="顺序一致性模型">顺序一致性模型</h3>
+<h4 id="基本概念">基本概念</h4>
+<p>上文的例子中提到, 我们可以限制系统不允许第四种结果出现, 最简单的一种满足此要求的内存模型是顺序一致性模型 (Sequential Consistency Model, 以下简称 SC). SC 无疑是最符合直觉的内存模型, 是 as-if-serial 原则向多线程环境的自然扩展, 其正式定义由 Leslie Lamport 提出 (这一贡献和其它众多成就一起为他赢得了 2013 年度的图灵奖). Lamport 首先给出两个定义:</p>
+<ol>
+<li>单一的处理器, 若其执行程序的结果与按程序定义的顺序执行操作所得的结果相同, 则称其是<em>顺序的</em> (<em>sequential</em>);</li>
+<li>一台多处理器计算机, 如果其任意一次执行的结果, 都如同全部处理器上的操作以某种串行顺序 (sequential order) 执行, 并且每一个处理器上的操作都按照其程序定义的顺序出现在这个序列中, 则此多处理器计算机是 <em>顺序一致的</em> (<em>sequntially consistent</em>).</li>
+</ol>
+<p>Lamport 随后论证了, 由多个顺序的单一处理器通过共享内存的方式组合成的多处理器, 不一定具备顺序一致性, 并给出了建造符合 SC 要求的多处理器计算机的必要条件. 这里我们不讨论这些必要条件, 仅就 SC 模型提供的性质做些说明.</p>
+<p>SC 的要求实际上可以分为两部分:</p>
+<ol>
+<li>维持单一线程上操作的程序顺序;</li>
+<li>维持所有线程上操作的单一串行顺序.</li>
+</ol>
+<p>先说第一点. 所谓程序顺序 (Program Order), 是指执行每个线程上的操作时按照线程内语义应该依照的顺序, 即程序定义的执行顺序. 针对同一个内存地址的操作显然要按照程序顺序, 因此我们在讨论内存模型时可以只关心针对不同内存地址的操作. 我们应该注意到, 根据 SC 定义, 同一个线程上即使针对不同内存位置的访问, 也必须如同按照程序定义的顺序执行, 因此对一个 SC 实现来说, 前述例子中描述的 P1 的乱序执行是非法的.</p>
+<p>第二点要求中的 &ldquo;单一串行顺序&rdquo;, 后面我们在正式定义中会知道, 是一个全序关系. 这个要求可以等价于, 每一个内存操作相对于其它内存操作是原子的 (atomic). 对于写操作来说, 要求其写入的结果是<em>同时</em>对所有线程可见的. 我们用下面的例子来说明, 如果不能满足操作的原子性, 就无法维护所有操作的单一顺序, 即无法满足 SC 的要求, 产生难以理解的结果.</p>
+<p><strong>例 2.</strong> 写操作原子性要求</p>
+<dl>
+<dt>初始条件</dt>
+<dd>A = B = 0</dd>
+</dl>
+<p><strong>P1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">A <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>P2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>A <span style="color:#f92672">==</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    B <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><strong>P3</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>B <span style="color:#f92672">==</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    r1 <span style="color:#f92672">=</span> A<span style="color:#f92672">;</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>SC 模型要求, 如果 P2 读到了 A 的值为 1, P3 读到了 B 的值为 1, 那么 P3 执行 r1 = A 的操作时读到的 A 的值必然为 1. 即  P2 和 P3 必须同时观察到 P1 中对 A 的写操作. 下图表示一次可能的 SC 执行, 其中虚线表示两个操作发生的先后顺序:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="sc-exe.png?width=600"><img class="img" src="sc-exe.png?width=600"
+        alt="sc-exe" width="600"
+        /></a></span><span class="caption"><span class="title">😊 SC 执行</span></span></span></p>
+<p>假设 P2 和 P3 在不同时间观察到写入 A 的操作, 如下图所示, P1 执行 A = 1 操作分为两步, seen by P2 表示写入操作的效果“传递”到 P2 的过程, 类似的, seen by P3 表示写入操作“传递”到 P3 的过程, 由于 P3 上的 read A 操作开始时, seen by P3 还没有完成, P3 读到的值仍然是程序初始写入到 A 的值 0, 因此可以认为 P1 的 A = 1 操作发生在 P3 的 read A 操作之后, 如果所有操作在一个顺序序列中, 则造成了一个矛盾: 序列从 A = 1 开始, 又回到了 A = 1! 因此, 此执行不符合 SC 模型的要求.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="non-sc-exe.png?width=600"><img class="img" src="non-sc-exe.png?width=600"
+        alt="no-sc-exe" width="600"
+        /></a></span><span class="caption"><span class="title">😞 非 SC 执行</span></span></span></p>
+<h4 id="-顺序一致性模型正式定义">* 顺序一致性模型正式定义</h4>
+<p>上述 SC 模型的描述偏重于直觉理解, 虽然 SC 的概念比较简单, 但内存模型要用于指导实现, 就必须用数学语言准确定义. 作为练习, 我们给出 SC 模型的正式定义.</p>
+<p>我们先简要回顾一下关系理论的一些概念, 更加深入的了解可以参考离散数学相关书籍.</p>
+<h5 id="关系理论有关概念回顾">关系理论有关概念回顾</h5>
+<dl>
+<dt>笛卡尔积 (Cartesian product)</dt>
+<dd>两个集合 A 和 B 的笛卡尔积 A × B 是所有第一个元素属于 A, 第二个元素属于 B 的有序对的集合. 即
+$$
+A \times B = \{\langle a, b\rangle \mid a \in A\text{ and }b \in B\}
+$$</dd>
+<dt>关系 (Relation)</dt>
+<dd>集合 A 和 B 上的一个 (二元) 关系, 是 A × B 的一个子集. 在不引起混淆的情况下. A × A 的子集可以简称为 A 上的关系. <br>设 R 为集合 A 和 B 上的关系, a ∈ A, b ∈ B, 则 ⟨a, b⟩ ∈ R 一般可以写作 a R b, 如 a = b, a ≤ b 等.</dd>
+<dt>自反性 (Reflexity)</dt>
+<dd>集合 A 上的关系 R, 若对于任意 x ∈ A 有 ⟨x, x⟩ ∈ R, 则称 R 是<em>自反的</em> (<em>relecxive</em>); 若对于任意 x ∈ A 有 ⟨x, x⟩ ∉ R, 则称 R 是<em>非自反的</em> (<em>irreflecxive</em>). <br>例如: 定义在整数集上的关系 = 是自反的, 因为对于任意整数 a, 都有 a = a, ≤ 也是自反的, 但 &lt; 是非自反的.</dd>
+<dt>对称性 (Semmetry)</dt>
+<dd>集合 A 上的关系 R, 若对于任意 a, b ∈ A 使得 ⟨a, b⟩ ∈ R, 有 ⟨b, a⟩ ∈ R, 则称 R 是<em>对称的</em> (<em>semmetric</em>); 若对于任意 a, b ∈ A 使得 ⟨a, b⟩ ∈ R 且 ⟨b, a⟩ ∈ R, 有 a == b, 则称 R 是<em>反对称的</em> (<em>antisemmetric</em>); 若对于任意 a, b ∈ A 使得 ⟨a, b⟩ ∈ R, 有 ⟨b, a⟩ ∉ R, 则称 R 是<em>非对称的</em> (<em>asymmetric</em>). <br>例如: 定义在整数集上的 = 是对称的, 因为对于任意整数 a 和 b, 若 a = b, 则 b = a, ≤ 为反对称关系, 因为若 a ≤ b 且 b ≥ a, 则必有 a = b, &lt; 是非对称的.</dd>
+<dt>传递性 (Transitivity)</dt>
+<dd>集合 A 上的关系 R, 若对于任意 a, b, c ∈ A 使得 ⟨a, b⟩ ∈ R, 且 ⟨b, c⟩ ∈ R, 有 ⟨a, c⟩ ∈ R, 则称 R 是<em>可传递的</em> (<em>transitive</em>). <br>例如, 整数集上的 =、≤、&lt; 这些关系都具有传递性.</dd>
+<dt>闭包 (Closure)</dt>
+<dd>设 R 为集合 A 上的一个关系, 定义满足 R′ ⊇ R 且自反的最小关系 R′ 为 R 的自反闭包 (Reflecxive Closure); 定义满足 R″ ⊇ R 且对称的最小关系 R″ 为 R 的对称闭包 (Semmetric Closure); 定义满足 R⁺ ⊇ R 且可传递的最小关系为 R 的可传递闭包 (Transitive Closure). <br>可以理解为, 关系 R 的闭包, 是向其中添加最少的有序对, 使其满足某种性质.</dd>
+<dt>偏序 (Partial Order)</dt>
+<dd>一个集合上, 自反、反对称、可传递的关系称为偏序; 非自反、反对称、可传递的关系称为严格偏序. <br>例如, 整数集上的关系 ≤ 为偏序, &lt; 为严格偏序, = 不是偏序, 因为它是对称的.</dd>
+<dt>可比较性 (Comparability)</dt>
+<dd>设 ≼ 为集合 A 上的一个偏序, 若元素 a, b ∈ A 满足 a ≼ b 或 b ≼ a, 则说 a 和 b 在 ≼ 下是可比较的 (caparable), 否则就说 a 和 b 在 ≼ 下不可比较 (incamparable).<br> 例如, 对于定义在整数集上的整除关系 |, 2 和 4 是可比较的, 因为 2 | 4, 而 3 和 5 则是不可比较的, 因为既没有 3 | 5, 也没有 5 | 3.</dd>
+<dt>全序 (Total Order)</dt>
+<dd>使集合的任意一对元素都可比较的偏序称为全序, 使集合的任意一对元素都可比较的严格偏序称为严格全序.<br>例如, 在整数集上, ≤ 是全序关系, 整除则不是.</dd>
+</dl>
+<h5 id="用二元关系概念定义顺序一致性模型">用二元关系概念定义顺序一致性模型</h5>
+<p>前面我们已经定义了程序顺序 (Program Order), 可以看出, 程序顺序是单个线程上的全部内存操作的集合上的一个全序关系, 记为$\prec_p$. SC 模型要求, 全部线程的所有内存操作的集合的先后顺序也是一个全序关系, 我们称其为全局内存顺序 (Global Memory Order), 记为$\prec_m$. 另外, 我们用 $L(a)$ 和 $S(a)$ 分别表示对内存地址 a 的读 (load) 和写 (store) 操作.</p>
+<p>一个 SC 执行要求:</p>
+<ol>
+<li>所有的线程按照其程序顺序将内存读写操作插入到顺序$\prec_m$中, 不管它们是否针对同一内存地址 (即 a = b 或 a ≠ b). 共有 4 种情况:
+<ol>
+<li>$L(a) \prec_p L(b)\implies L(a) \prec_m L(b)$ /* Load → Load */</li>
+<li>$L(a) \prec_p S(b)\implies L(a) \prec_m S(b)$ /* Load → Store */</li>
+<li>$S(a) \prec_p S(b)\implies S(a) \prec_m S(b)$ /* Store → Store */</li>
+<li>$S(a) \prec_p L(b)\implies S(a) \prec_m L(b)$ /* Store → Load */</li>
+</ol>
+</li>
+<li>每次读操作读到的值, 来自$\prec_m$上前一个对同一内存地址的写操作, 即 $L(a)$ 读到的值等于满足如下条件的 $S(a)$ 写入的值: $S(a)\prec_mL(a)$, 且不存在 $S^\prime(a)$ 使得 $S(a)\prec_mS^\prime(a)$ 且 $S^\prime(a)\prec_mL(a)$.</li>
+</ol>
+<p>要求 2 表达了写操作的原子性, 并且表示, 操作被所有线程观察到的顺序都与操作在 $\prec_m$ 中的顺序一致. 这是一个比较特殊的性质, 后面我们会看到在其它的内存模型中这一点可能并不成立.</p>
+<p>我们注意到, 以上定义中将操作发生的顺序和读到的值分开做了表述, 在具有这个特殊性质的 SC 模型中, 似乎显得有点 &ldquo;多余&rdquo;. 为什么不是仅仅定义操作执行的顺序, 并且认为它被所有线程观察到才代表执行完成呢? 首先, 这种分开表述比较贴近硬件实现的分工, 即处理器发起内存请求, 而内存系统负责执行请求; 另外, 在后面讨论松弛内存模型时我们会看到, 对 SC 模型的放松可以在这两个要求上进行, 即一是对程序顺序要求的放松, 二是对操作原子性的放松. 事实上, 如果写操作不具备原子性, 我们就根本没办法单纯定义一个统一的 &ldquo;全局执行顺序&rdquo;, 因为每个线程观察到的顺序都不一样, 如果把所有线程观察到的顺序关系都放到集合中, 最后得到的可能根本不是一个偏序关系.</p>
+<p>另外一个需要提一下的问题, 是现代硬件大都提供了 RMW (read-modify-write) 类的原子操作指令, 这类指令提出了更严格的执行要求, 其设计的读、写操作在内存顺序上必须连续出现. RMW 的实现在此不做展开.</p>
+<p>我们用一个表格来表示 SC 模型中各种操作的排序规则:</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="sc-ordering-rules.png?width=500"><img  src="sc-ordering-rules.png?width=500"
+        alt width="500"
+        /></a></p>
+<p>表格中, 操作 1 和 操作 2 分别表示程序顺序相继的两个操作, X 表示强制顺序, 即全局内存顺序中要保持操作的程序顺序.</p>
+<h4 id="顺序一致性模型的实现">顺序一致性模型的实现</h4>
+<p>我们仅给出两个最简单的 SC 模型的概念实现来加深理解 (实际中显然不会采取如此低效的实现).</p>
+<p>一个办法是多任务复用单处理器, 即在单个的处理器上交替执行不同线程的指令, 在两个线程的指令执行之间会发生上下文切换, 任何等待中的内存操作在上下文切换之前都要完成.</p>
+<p>第二个方法允许多个处理器存在, 多个处理器通过一个多路开关 (Switch) 与内存模块相连, 如下图所示, 每个处理器按照程序顺序向开关发送内存操作, 开关以某种算法选择一个处理器, 允许其完成一个内存操作, 然后重复这一操作.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="switch-sc-impl.png?width=300"><img class="img" src="switch-sc-impl.png?width=300"
+        alt="switch-sc-impl" width="300"
+        /></a></span><span class="caption"><span class="title">SC 模型的开关实现</span></span></span></p>
+<p>现实的 SC 实现可以使用带有缓存的内存系统, 可以使用一些优化策略, 如缓存预取、分支预测、动态调度、单核多线程等. MIPS R10000 实现了 SC 模型.</p>
+<h4 id="sc-的缺点和松弛一致性模型">SC 的缺点和松弛一致性模型</h4>
+<p>SC 模型最大的优点是易于理解, 但它过于严格, 导致很多编译器、硬件的优化不可用.而且, 即使从编写程序的角度来说, SC 模型也未必够好, 因为它并没有消除数据竞争, 而这一点经常被忽略, 导致很多程序缺少必要的同步. 几乎所有的现代多处理器都不是顺序一致的, JVM 同样不是. 但是作为内存模型的 &ldquo;黄金标准&rdquo;, SC 模型还是有着不可替代的意义. 下文中我们还会看到它的应用.</p>
+<p>为了获得更高的性能, 人们沿着两个途径进行了探索: 一是使用通用的手段来隐藏延迟, 二是放松 SC 对内存操作的严格顺序要求以允许更多优化手段, 由程序提供必要的顺序约束, 从而产生了一系列的所谓松弛一致性模型 (Relaxed Consistency Model). 松弛一致性模型实际上可以看作是将维持顺序的部分工作, 越过一致性协议的边界推到了程序一侧, 直观来看为系统实现提供了更大的灵活性.</p>
+<p>松弛一致性模型可以在程序顺序和写操作一致性两个方面放松 SC 模型的约束.</p>
+<p>关于程序顺序, 在 SC 模型的正式定义中我们看到, SC 要求维持四种类型的操作顺序, 松弛内存模型可以放松其中的一个或多个类型:</p>
+<ol>
+<li>仅放松 Store → Load 顺序约束, 例如 SPARC 采用的 Total Store Order (以下简称 TSO) 模型, x86 也疑似采用这种模型;</li>
+<li>同时放松 Store → Load 和 Store → Store 顺序约束, 例如 Partial Store Order 模型, SPARC 允许操作系统在启动时选择这种模型.</li>
+<li>放松所有的顺序约束, 例如 PowerPC 的 Weak Ordering 模型, 以及广泛使用的 Release Consistency (以下简称 RC) 模型.</li>
+</ol>
+<p>对写操作原子性的放松主要有两种:</p>
+<ol>
+<li>允许一个线程早于其它线程看到自己执行的写操作.</li>
+<li>允许一个线程早于其它线程看到另一个线程的写操作.</li>
+</ol>
+<p>我们下面简单介绍 TSO 和 RC 模型. 前者可以作为一个相对简单的 “松弛” 演示, 后者应用广泛.</p>
+<h3 id="total-store-order-模型">Total Store Order 模型</h3>
+<h4 id="tso-模型的产生背景">TSO 模型的产生背景</h4>
+<p>为了满足缓存一致 (cache coherence) 等要求, 处理器发出的写操作请求, 内存系统处理可能不能立即处理, 需要处理器等待. 由于写操作很频繁, 避免这种等待可以带来显著的性能提升, 因此, 设计者会在处理器和内存之间插入一个写入缓冲区 (write buffer), 写操作提交后进入缓冲区, 当内存系统的目标位置可以处理操作时离开缓冲区.</p>
+<p>在单 (核) 处理器上, 只要保证读取内存地址 A 返回的值是最近一次写入的值, 写入缓冲区就是透明的, 可以有两种方式做到这一点: 当有针对 A 的写入操作仍在缓冲区中时, 读 A 操作先等待这些操作离开缓冲区执行; 或者, 读操作直接返回缓冲区中最近一次写入操作的值, &ldquo;最近&rdquo; 由程序顺序定义, 这个方法称为 bypassing, 显然更有利于性能提升.</p>
+<p>在多 (核) 处理器上, 让每个核心拥有独立的 bypassing 写入缓冲区, 能不能维持缓冲区透明呢? 很遗憾, 不能. 我们仍然看例 1, 为了阅读方便我把它复制到这里:</p>
+<p><strong>线程 T1:</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;One!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><strong>线程 T2:</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>a <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Two!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>假设 P1 中的写操作 a = 1 和 P2 的写操作 b = 1 都在各自的写入缓冲区中, 就可能出现同时打印出 &ldquo;One!&rdquo; 和 &ldquo;Two!&rdquo; 的 &ldquo;第四种结果&rdquo;.</p>
+<p>要保留 SC 模型, 要么去掉写入缓冲区, 丢失性能, 要么增加实现复杂度 (和功耗) 来保持写入缓冲区的透明. SPARC 的选择是, 放弃 SC 模型, 采用一种允许每个处理器内核拥有独立的 FIFO 写入缓冲区的模型: Total Store Order (注意缓冲区必须是 FIFO 的, 以维持 Store → Store 顺序).</p>
+<h4 id="tso-模型的基本思想">TSO 模型的基本思想</h4>
+<p>TSO 保留了 SC 模型对内存操作顺序的前三个约束, 放弃了第四个 Store → Load 顺序约束, 同时放松了写操作原子性要求, 允许一个线程早于其它线程读到自己写入的值 (通过 bypassing). 尽管以上例子在 TSO 实现上会出现违反直觉的结果, 但 TSO 仍然是一个相对严格的内存模型 (一种提法是将 SC 和 TSO 称为强一致性模型), 很多程序习惯用法在 TSO 上仍然能正常使用, 例如:</p>
+<p><strong>例 3.</strong> TSO 执行允许的习惯用法</p>
+<dl>
+<dt>初始条件</dt>
+<dd>data = 0, set = <code>false</code></dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">data <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+set <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>set<span style="color:#f92672">);</span>
+r1 <span style="color:#f92672">=</span> data<span style="color:#f92672">;</span>
+</code></pre></div><p>这段程序在 TSO 实现上执行, 仍然可以期望 r1 的结果为 1. 这是因为 T1 中执行的都是写操作, T2 中执行的都是读操作, 两者的这部分操作的程序顺序都得到了保留.</p>
+<p>如何处理放弃约束带来的意外结果呢? 显然, 实现必须提供必要的手段 (Safety nets) 供程序使用来维持操作顺序和写操作原子性. 比如程序可以在两个内存操作之间插入内存屏障 (memory barrier) 指令 (以下记为 FENCE), 一个 FENCE 指令保证所有在程序顺序上先于它出现的操作都先于它执行, 所有在程序顺序上后于它出现的操作都后于它执行, 简单说, 在乱序执行发生时, 任何操作都不能越过 FENCE. 我们试试在前述例子中插入 FENCE:</p>
+<p><strong>线程 T1:</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+FENCE
+<span style="color:#a6e22e">if</span> <span style="color:#f92672">(</span>b <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;One!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><strong>线程 T2:</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+FENCE
+<span style="color:#a6e22e">if</span> <span style="color:#f92672">(</span>a <span style="color:#f92672">==</span> 0<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    print<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Two!&#34;</span><span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>现在两个线程中各自的写操作不能越过 FENCE 与读操作乱序执行, 就避免了意外结果的出现. 事实上, 由于附加的 FENCE 维护了 Store → Load 操作的顺序, 这个执行成为了 SC 执行.</p>
+<p>除了内存屏障指令, 硬件还可以通过其它手段提供 Safety nets, 如 RMW 指令、特殊的带同步作用的读写操作等. 这里我们不深入讨论实现方式, 作为相对严格的内存模型, TSO 实现上的程序较少用到 FENCE 指令, 因而 FENCE 指令可以使用较为简单的实现, 比如强制写入缓冲中的操作全部执行, 并且在 FENCE 执行完成之前不允许后续的读操作执行. 但是对于后面介绍的更为松弛的内存模型来说, 对 FENCE 实现的性能要求更高. 无论如何, FENCE 指令的使用会带来性能的下降, 程序设计者需要谨慎的选择需要添加 FENCE 的点.</p>
+<h4 id="tso-模型的正式定义">TSO 模型的正式定义</h4>
+<p>下面我们用二元关系的描述方式给出 TSO 模型的正式定义. 定义中涉及到的程序顺序$\prec_p$、全局内存顺序$\prec_m$等概念与上面讨论 SC 模型时的定义基本相同.</p>
+<p>一个 TSO 执行要求:</p>
+<ol>
+<li>所有线程将其内存操作和 FENCE 按照如下规则插入到顺序 $\prec_m$ 中, 不管内存操作是否针对同一内存地址 (即 a = b 或 a ≠ b):
+<ol>
+<li>$L(a) \prec_p L(b)\implies L(a) \prec_m L(b)$ /* Load → Load */</li>
+<li>$L(a) \prec_p S(b)\implies L(a) \prec_m S(b)$ /* Load → Store */</li>
+<li>$S(a) \prec_p S(b)\implies S(a) \prec_m S(b)$ /* Store → Store */</li>
+<li>$FENCE_1 \prec_p FENCE_2 \implies FENCE_1 \prec_m FENCE_2$ /* FENCE → FENCE*/</li>
+<li>$L(a) \prec_p FENCE \implies L(a) \prec_m FENCE$ /* Load → FENCE */</li>
+<li>$FENCE \prec_p L(a) \implies FENCE \prec_m L(a)$ /* FENCE → Load */</li>
+<li>$S(a) \prec_p FENCE \implies S(a) \prec_m FENCE$ /* Store → FENCE */</li>
+<li>$FENCE \prec_p S(a) \implies FENCE \prec_m S(a)$ /* FENCE → Store*/</li>
+</ol>
+</li>
+<li>每次读操作读到的值来自$\prec_m$上最后一次在$\prec_p$或$\prec_m$上先于它的写操作, 即:
+<ol>
+<li>给定读操作 $L(a)$, 定义集合 $SS(a) = \{S(a) \mid S(a) \prec_m L(a) \text{ or } S(a) \prec_p L(a)\}$;</li>
+<li>$L(a)$ 读到的值等于满足如下条件的 $S(a)$ 写入的值: $L(a) \in SS(a)$ 且不存在 $S^\prime(a)\in SS(a)$ 使得 $S(a)\prec_mS^\prime(a)$ 且 $S^\prime(a)\prec_m L(a)$.</li>
+</ol>
+</li>
+</ol>
+<p>第二个要求比较拗口, 实际上表示了写操作原子性的丧失: 一个读操作读到的值可能来自于一个在全局内存顺序上后于它, 但在同一线程先于它发生的写操作 (通过 bypassing), 说的更明白些, 一个线程可以先于其它线程读到它自己的写操作.</p>
+<p>我们用以下表格表示 TSO 模型的操作排序规则:</p>
+<p><a target="_blank" rel="noopener noreferrer" 
+  href="tso-ordering-rules.png?width=600"><img  src="tso-ordering-rules.png?width=600"
+        alt width="600"
+        /></a></p>
+<p>表格中用颜色标出了相比 SC 模型有变化的部分. 其中 B 表示 bypassing, 即只有同一个线程对同一地址的操作, 可以通过 bypassing 维持其顺序.</p>
+<h4 id="tso-模型的实现">TSO 模型的实现</h4>
+<p>最直接的 TSO 实现可以通过给 SC 实现加上 FIFO 写入缓冲得到, 事实上多数 TSO 实现正是这样做的. SC 实现中的各种优化策略也可以应用到 TSO 上, 当然需要一些适配, 例如, 如果支持单核多线程, 需要将写入缓冲区在逻辑上划分成每个线程上下文私有的缓冲区.</p>
+<p>下图表示了从 SC 的开关实现扩展而来的 TSO 概念实现.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="switch-tso-impl.png?width=300"><img class="img" src="switch-tso-impl.png?width=300"
+        alt width="300"
+        /></a></span><span class="caption"><span class="title">TSO 模型的开关实现</span></span></span></p>
+<h4 id="tso-与-sc-模型的比较">TSO 与 SC 模型的比较</h4>
+<p>TSO 执行与 SC 执行可以用下图表示, TSO 实现和 SC 实现具有同样的关系, 即: 任何一个 SC 执行 (实现) 都同时是 TSO 执行 (实现), 因此我们说 SC 比 TSO 模型更严格 (strict).</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="sc-tso-venn.png?width=200"><img class="img" src="sc-tso-venn.png?width=200"
+        alt width="200"
+        /></a></span></span></p>
+<p>SC 对程序编写者更直观, 但 TSO 与其相近, 大部分习惯用法仍然有效; 对简单处理器来说, TSO 的性能优于 SC, 但使用预测执行等优化措施可以缩小这一差距.</p>
+<h3 id="release-consistency-模型">Release Consistency 模型</h3>
+<p>进一步放松了内存顺序和写操作原子性的约束, 既有必要性, 也有可能性. 一方面, 通过放松这些限制, 可以进一步放宽可用的优化范围 (如使用非 FIFO 的写入缓冲、 简化预测执行实现等), 获取更高的性能; 另一方面, 通过下面的例子也容易看出, TSO 维护的某些顺序是不必要的:</p>
+<p><strong>例 4.</strong> TSO 可以进一步放松</p>
+<dl>
+<dt>初始条件</dt>
+<dd>a = b = 0, set = <code>false</code></dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">S1: a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+S2: b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+S3: set <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">L1: <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>set<span style="color:#f92672">);</span>
+L2: r1 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+L3: r2 <span style="color:#f92672">=</span> b<span style="color:#f92672">;</span>
+</code></pre></div><p>注意到 T1 中都是写操作, T2 中都是读操作, 通过前面的介绍我们知道, SC 和 TSO 都在全局内存顺序中维持了这些程序顺序, 但是观察可以发现, 在这段程序中, 交换 $S1$ 和 $S2$ 的顺序, 或者交换 $L2$ 和 $L3$ 的顺序, 并不会影响执行结果. 我们用 $L1(set)$ 表示读到 set 为 <code>true</code> 的那次 L1 操作, 则 SC 和 TSO 模型保证了顺序:
+$$
+S1 \prec S2 \prec S3 \prec L1(set) \prec L2 \prec L3
+$$
+但我们只需要
+$$
+S1, S2 \prec S3 \prec L1(set) \prec L2, L3
+$$</p>
+<p>前面已经提到, 通过不同程度的放松顺序要求, 得到了各种不同的内存模型, Release Consistency 模型 (以下简称 RC 模型) 就是其中之一. RC 模型放松了所有读、写操作之间的强制顺序要求.</p>
+<p>在 TSO 模型的部分我们提到, 放松顺序要求后, 系统必须提供必要的手段供程序使用来标明对顺序的要求, 继续上述例子, 一个可能的维持顺序的方法是插入 FENCE:</p>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">S1: a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+S2: b <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+F1: FENCE
+S3: set <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">L1: <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>set<span style="color:#f92672">);</span>
+F2: FENCE
+L2: r1 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+L3: r2 <span style="color:#f92672">=</span> b<span style="color:#f92672">;</span>
+</code></pre></div><p>RC 模型对内存操作做了更为精细的划分, 具体可以参考相关文献, 简单来说, 就是用 RELEASE 和 AQUIRE 操作代替了 FENCE, 与 FENCE 强制双向的执行顺序 (FENCE 两侧的操作都不能越过 FENCE) 不同, RELEASE 只能保证程序顺序在其前面的操作不能越过它, AQUIRE 则只能保证其后的操作不能越过它. RC 模型要求保持如下程序顺序:</p>
+<ol>
+<li>AQUIRE $\prec$ Load, Store</li>
+<li>Load, Store $\prec$ RELEASE</li>
+<li>AQUIRE $\prec$ AQUIRE</li>
+<li>RELEASE $\prec$ RELEASE</li>
+<li>AQUIRE $\prec$ RELEASE</li>
+<li>RELEASE $\prec$ AQUIRE</li>
+</ol>
+<h2 id="java-内存模型解说">Java 内存模型解说</h2>
+<h3 id="java-内存模型的要求">Java 内存模型的要求</h3>
+<p>前面提到过, JSR-133 对 Java 内存模型进行了重要的修订. 修订之后的 JMM, 为实现提供了更大的灵活性, 清晰的定义了什么是正确的程序, 并且为正确、不正确的程序都做了清晰的语义定义.</p>
+<p>修订后的 JMM 包含两点要求 (保证):</p>
+<ol>
+<li>对于正确同步的程序, 其所有执行都是 SC 执行;</li>
+<li>清晰明确的定义不正确的程序的行为, 并尽量避免影响现有的编译器和硬件.</li>
+</ol>
+<p>先看看已有的模型能不能直接拿来用. 前面提到过, SC 模型虽然满足直观性的要求, 但从程序编写角度来看未必适合作为高级程序语言的内存模型, 而且禁用了大量需要重新排列语句顺序实施的优化. 那么其它模型呢? 在设计 JMM 的年代, 很多的松弛内存模型都出现在硬件设计领域, 使用底层系统术语如缓存、缓冲等描述, 并且 JMM 设计者认为, 这些模型难以推导, 也没有提供足够的实现灵活性.</p>
+<p>为了同时满足编程的简单和实现的灵活, 研究者提出一些新的内存模型, 称为 data-race-free (DRF, 无数据竞争) 模型. 这类模型的基本思想是, 数据竞争往往导致 bug, 良好的编程实现应该避免数据竞争, 这些模型将没有数据竞争的程序定义为正确的程序, 并且<em>保证这些程序的执行满足顺序一致性的要求</em>. 满足这种要求的内存模型称为支持 SC for DRF. 为了实现的灵活性, 这些模型对于存在数据竞争的程序 (即所谓不正确的程序) 没有提供任何保证.</p>
+<p>JMM 选择支持 SC for DRF, 但设计者认为, 如果不完整的定义不正确的程序的行为, 就会允许对 Java 安全特性要求的违反. 为此 JMM 明确定义了因果性 (Causality) 的概念, 为不正确的程序执行结果提供了一个最低界限, 因果性的要求既足够满足 Java 的安全特性, 又能够允许标准的编译器和硬件优化.</p>
+<p>下面, 试分别说明.</p>
+<h4 id="正确同步的程序">正确同步的程序</h4>
+<p>JMM 明确定义了什么是正确同步的程序 (无数据竞争), 以及这类程序的正确语义 (顺序一致).</p>
+<p>正确同步程序的准确定义涉及到一系列概念的定义.</p>
+<dl>
+<dt>共享变量 / 堆内存 (Shared variables / Heap memory)</dt>
+<dd>多个线程共享的内存称为共享内存或堆内存, 所有的实例字段、静态字段和数组元素都存储在堆内存上, 我们用变量 (variable) 一词来统一表示字段或数组元素.</dd>
+<dt>冲突访问 (Conflicting Accesses)</dt>
+<dd>对一个变量的读或写称为对此变量的访问. 对同一个共享字段或数组元素的两个访问, 如果至少有一个是写操作, 则称它们是冲突的.</dd>
+<dt>线程间操作 (Inter-thread Actions)</dt>
+<dd>指一个线程上执行的可以被其它线程检测到或直接影响的操作. 包括对共享变量的访问, 同步操作. 还包括外部操作 (external actions) 和线程发散操作 (thread divergence actions). <br> 同步操作的定义见下文, 后两种操作我们暂时可以不关心其含义. 由于我们关注的重点不是线程内操作, 以下将线程间操作简称为操作.</dd>
+<dt>同步操作 (Synchronization Actions)</dt>
+<dd>包括上锁 (lock), 解锁 (unlock), 对 volatile 变量的读和写, 启动一个线程的操作, 检测到一个线程终止的操作.</dd>
+<dt>程序顺序 (Program Order)</dt>
+<dd>对于某个线程上的全部线程间操作的集合, 程序顺序是定义在其上的全序关系, 反应这些操作按照线程内语义应当遵循的执行顺序.</dd>
+<dt>同步顺序 (Synchronization Order)</dt>
+<dd>一次执行的同步顺序, 是其中所有同步操作集合上的一个全序关系.</dd>
+<dd>一个线程 t 上的所有同步操作, 其同步顺序与程序顺序一致.</dd>
+<dt>同步于 (Synchronizes-With) 顺序</dt>
+<dd>同步操作定义了同步于顺序, 如下</dd>
+<dd><ol>
+<li>对 monitor $m$ 的 unlock 操作, 同步于后续对 $m$ 的所有 lock 操作 (&ldquo;后续&rdquo; 是指在同步顺序上, 下同).</li>
+</ol>
+</dd>
+<dd><ol start="2">
+<li>对 volatile 变量 $v$ 的写操作, 同步于后续任意线程对 $v$ 的全部读操作.</li>
+</ol>
+</dd>
+<dd><ol start="3">
+<li>启动一个线程的操作, 同步于此线程上的第一个操作.</li>
+</ol>
+</dd>
+<dd><ol start="4">
+<li>对各个变量写入默认值 (0, false 或 null) 的操作, 同步于所有线程的第一个操作.</li>
+</ol>
+</dd>
+<dd><ol start="5">
+<li>线程 $T1$ 中的最后一个操作, 同步于所有在另外一个线程 $T2$ 中观察到 $T1$ 已终止的操作. $T2$ 可以通过调用 <code>T1.isAlive()</code> 或 <code>T1.join()</code> 做到这一点.</li>
+</ol>
+</dd>
+<dd><ol start="6">
+<li>如果线程 $T1$ 中断 (interrupt) 了线程 $T2$, $T1$ 的中断操作同步于任意其它线程 (包括 $T2$) 判断出 $T2$ 被中断的点. (判断的途径包括发现抛出了 <code>InterruptedException</code>, 或调用 <code>Thread.interrupted</code> 或 <code>Thread.isInterrupted</code> 方法).</li>
+</ol>
+</dd>
+<dd>注意: 同步于顺序定义在<em>同步操作</em>的集合上, 并且仅是一个偏序关系, 例如, 两个线程上对不同 monitor 分别执行 lock 和 unlock 操作, 这两个操作不存在同步于顺序.</dd>
+<dd>
+<p>每个同步于关系产生了一个有向边 (Edge), 这个边的起点和终点都是同步操作, 起点称为释放 (release), 终点称为获取 (aquire).</p>
+</dd>
+<dt>先行发生于 (Happens-Before) 顺序</dt>
+<dd>对于两个操作 $x, y$, 我们用 $x \xrightarrow{hb} y$ 表示 $x$ 先行发生于 $y$. 先行发生于顺序是程序顺序和同步于顺序的可传递闭包, 具体说有以下规则:</dd>
+<dd><ol>
+<li>若 $x, y$ 发生在同一个线程, 且程序顺序上 $x$ 先于 $y$, 则 $x \xrightarrow{hb} y$.</li>
+</ol>
+</dd>
+<dd><ol start="2">
+<li>一个对象的构造器 (constructor) 的末尾先行发生于其 finalizer 的开始.</li>
+</ol>
+</dd>
+<dd><ol start="3">
+<li>若 $x$ 同步于 $y$ 且 $y$ 在后, 则 $x \xrightarrow{hb} y$.</li>
+</ol>
+</dd>
+<dd><ol start="4">
+<li>若 $x \xrightarrow{hb} y$ 且 $y \xrightarrow{hb} z$, 则 $x \xrightarrow{hb} z$.</li>
+</ol>
+</dd>
+<dd>注意:</dd>
+<dd><ol>
+<li>先行发生于顺序的定义集合扩展到了所有操作, 但仍然是一个偏序关系, 不是全序关系, 也就是说, 有些操作之间是不存在这个关系的.</li>
+</ol>
+</dd>
+<dd><ol start="2">
+<li>两个操作间存在先行发生于顺序, 并不代表在实际实现中要以此顺序执行, 只要观察到的结果与此相符即可. 一般的说, 对于第三个和它们之间不存在先行发生于顺序的操作, 不需要观察到这个执行顺序.</li>
+</ol>
+</dd>
+<dd><ol start="3">
+<li>Object 类的 wait 方法有与之关联的 lock 和 unlock 操作, 其先行发生于顺序由这些操作决定.</li>
+</ol>
+</dd>
+<dt>数据竞争 (Data race)</dt>
+<dd>来自不同线程的两个冲突的访问, 如果不存在先行发生于顺序, 则构成一个数据竞争.</dd>
+<dt>正确同步 (Correctly Synchronized) 或 无数据竞争程序 (Date-Race-Free) 程序</dt>
+<dd>一个程序可称为正确同步程序或无数据竞争程序, 当且仅当其所有的顺序一致执行都不存在数据竞争.</dd>
+</dl>
+<p>JMM 要求 (保证), <strong>正确同步的程序, 其所有执行都是 SC 执行</strong> (如何实现是另一个问题). 对于程序设计者, 如果关于 JMM 只能记住一句话, 我想应该是这句. 我们看到, SC 模型在正确同步程序的定义中找到了合适的位置. 它没有直接作为编写程序的环境, 但却用作了分析程序正确性的条件. 有了这点保证, 程序编写者就可以像在 SC 实现上一样设计和分析程序, 只要保证程序是正确同步的, 就不必担心编译器、虚拟机和硬件的优化会影响程序的执行结果.</p>
+<blockquote>
+<p>注: 以上 &ldquo;同步于&rdquo;、&ldquo;先行发生于&rdquo; 是我为了表述方便强行做的翻译, 后文为了醒目的突出概念, 仍用 synchronizes-with 和 happens-before 表示, 位于标题和句首或单独出现时大写首字母. Synchronization Order 仍写作 &ldquo;同步顺序&rdquo;.</p>
+</blockquote>
+<h4 id="out-of-thin-air-保证">Out-of-Thin-Air 保证</h4>
+<p>JMM 修订中的一个重要努力, 就是对不正确同步的程序行为做出规范. 具体来说, JMM 要求, 即使没有正确同步, 程序也不应出现 Out-of-Thin-Air 的行为. 所谓 out of thin air (无中生有), 源于程序中存在因果循环 (causal cycle). 可以用下面的例子说明:</p>
+<p><strong>例 5.</strong> Out-of-Thin-Air</p>
+<p>初始条件
+: x = y = 0</p>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+y <span style="color:#f92672">=</span> r1<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r2 <span style="color:#f92672">=</span> y<span style="color:#f92672">;</span>
+x <span style="color:#f92672">=</span> r2<span style="color:#f92672">;</span>
+</code></pre></div><p>根据定义, 这个程序没有正确同步, 因而其执行不是顺序一致执行. 设想有某个优化激进的处理器, 在执行 T1 时通过猜测将 <a href="https://www.google.com/search?q=answer&#43;to&#43;life&#43;the&#43;universe&#43;and&#43;everything"target="_blank">42</a> 写入 y, 使得 T2 读到此值并写入到 x, 而 T1 读到 x 的值, 证明了其之前猜测. 于是就出现了 r1 = r2 = 42 这样无中生有一般的不合理结果, 类似的结果可能导致严重的安全缺陷 (比如无中生有出来的可能是一个指向线程不应该有权限访问的对象). JMM 要求实现避免出现这样的执行结果.</p>
+<p>然而如何准确的识别出 Out-of-Thin-Air 错误, 是一个比想象中复杂的问题, 并不是所有看上去存在自我证明的程序都存的安全缺陷, 有些甚至来自编译器的优化. 如何正确识别对因果性的违反属于修订后的 JMM 的核心部分.</p>
+<h3 id="过渡模型-happens-before-内存模型">过渡模型: Happens-Before 内存模型</h3>
+<p>JLS 在正式定义 JMM 之前, 先提出了一个过度模型, 称为 happens-before 内存模型 (以下简称 HBMM). 这个模型对合法的执行提出了以下要求:</p>
+<ol>
+<li>一次合法执行中, 所有同步操作的集合上存在一个称为同步顺序的全序关系, 根据同步顺序和 synchronizes-with 顺序规则, 可以在匹配的同步操作之间确定一个称为 synchronizes-with 顺序的偏序关系, synchronizes-with 顺序和程序顺序的可传递闭包称为 happens-before 顺序.</li>
+<li>对于每个线程 $t$, $t$ 所执行的操作,与给定 $t$ 在执行中所有读操作读到的值的情况下让 $t$ 单独按程序顺序执行所产生的操作相同.</li>
+<li>非 volatile 读操作 (即所读的变量不是 volatile 变量) 读到的值, 由 happens-before 一致性规则决定.</li>
+<li>volatile 读操作读到的值, 由同步顺序一致性 (synchronization order consistency) 规则决定.</li>
+</ol>
+<p>以上要求中的两个一致性规则描述如下.</p>
+<p><em>Happens-Before 一致性规则</em>规定: 一个针对变量 $v$ 的读操作 $r$, 允许读到对 $v$ 的写操作 $w$ 写入的值, 如果在 happens-before 偏序关系中</p>
+<ol>
+<li>$r$ 不 happens-before $w$, 即不存在 $r \xrightarrow{hb} w$. <br>这个规则要求一个读操作不能读到发生的其后的写操作. 注意, 这包含了两种情况, 一种是 $w \xrightarrow{hb} r$, 一种是 $r$ 和 $w$ 之间不存在 happens-before 关系 (happens-before 不是全序关系). 特别注意第二种情况下 $r$ 也是允许读到 $w$ 的, 但是是否能读到, 取决于数据竞争的结果.</li>
+<li>$w$ 和 $r$ 之间按 happens-before 顺序不存在中间的写操作 $w\prime$ (即不存在 $w\prime$ 使得 $w \xrightarrow{hb}w\prime\xrightarrow{hb}r$).<br>这条要求 $w$ 在 happens-before 路径上没有被覆盖.</li>
+</ol>
+<p><em>同步顺序一致性</em>规定:</p>
+<ol>
+<li>同步顺序与程序顺序一致, 即一个线程上的同步操作在同步顺序中出现的顺序与在程序顺序中一致.</li>
+<li>每个对 volatile 变量 $v$ 的读操作读到的值, 等于在同步顺序上先于它的最后一个对 $v$ 的写操作写入的值.</li>
+</ol>
+<p>HBMM 是对 JMM 要求语义的简单近似. 我们用一个例子来说明它对读操作所读到的值的约束.</p>
+<p><strong>例 6.</strong> Happens-Before 模型的约束</p>
+<dl>
+<dt>初始条件</dt>
+<dd>x = 0, ready = <code>false</code>, <em>ready 为 volatile 变量</em></dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">S1: x <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+S2: ready <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">L1: <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>ready<span style="color:#f92672">)</span>
+L2:     r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+</code></pre></div><p>按照 HBMM 要求, 如果 $L1$ 操作读到了 ready 的值为 <code>true</code>, 则后续的 $L2$ 操作也应该读到了 $S1$ 写入的 1. 推导过程如下: ready 是一个 volatile 变量, 对 ready 的读操作读到的值由同步顺序一致性决定, 如果 $L1$ 读到了 $S2$ 写入的 <code>true</code>, 说明在此次执行的同步顺序上, $L1$ 在 $S2$ 之后, 我们用 $\xrightarrow{so}$ 表示同步顺序, 则有 $S2 \xrightarrow{so} L1$, 用 $\xrightarrow{sw}$ 表示 synchronizes-with 关系, 根据synchronizes-with 规则 2, 有 $S2 \xrightarrow{sw} L1$. 用 $\xrightarrow{po}$ 表示程序顺序, 则有 $S1 \xrightarrow{po} S2$ 和 $L1 \xrightarrow{po} L2$. 由 happens-before 顺序的定义可知, 有 $S1 \xrightarrow{hb} L2$, x 为非 volatile 变量, 根据 happens-before 一致性规则, 可知 $L2$ 读到的值可以是 $S1$ 写入的值. 另外一个隐藏的候选值, 是初始值 0 的写入操作, 我们把它记为 $S0$, 由 synchronizes-with 规则 4, 有 $S0 \xrightarrow{sw} L2$, 进而有 $S0 \xrightarrow{hb} L2$. 但是在 happens-before 顺序上, $S0$ 的写操作被 $S1$ 覆盖了, 所以 $L2$ 读到的值只能是 $S1$ 的写入值.</p>
+<p>我们用图来表示各顺序关系:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="hb-mm-demo.png?width=600"><img class="img" src="hb-mm-demo.png?width=600"
+        alt width="600"
+        /></a></span></span></p>
+<p>假设 ready 不是 volatile 变量呢? 根据 happens-before 一致性规则, 如果 $L1$ 读到了 $S2$ 写入的值, 仅仅要求不存在 $L1 \xrightarrow{hb} S2$, 而无法推导出 $S2$ 与 $L1$ 存在顺序关系, 因而各操作间的顺序关系变成了:</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="hb-mm-demo-non-volatile.png?width=600"><img class="img" src="hb-mm-demo-non-volatile.png?width=600"
+        alt width="600"
+        /></a></span></span></p>
+<p>可见 $S1$ 与 $L2$ 之间不存在 happens-before 关系, $L2$ 应当读到 $S0$ 还是 $S1$ 写入的值, 都是 HBMM 允许的. 从实现角度看, 如果某个实现在执行中交换了 $S1$ 与 $S2$, 是 HBMM 允许的, 可能产生上述结果.</p>
+<h3 id="因果关系-causality-要求">因果关系 (Causality) 要求</h3>
+<p>HBMM 简单清晰, 是通往 JMM 的重要一步, 不幸的是, 这个模型不够严格, 上文中 JMM 的两个要求 (SC for DRF, Out-of-Thin-Air 保证), 它都没有满足. 我们再看一下例 5, 由于两个线程的操作之间没有 happens-before 关系, 所以读操作都可以读到另一个线程上的写入的 42, 因此允许 out-of-then-air 结果出现. 下面的例子说明, HBMM 也没有保证 DRF 程序的 SC 执行.</p>
+<p><strong>例 7</strong>. Happens-Before 模型不支持 SC for DRF</p>
+<dl>
+<dt>初始条件</dt>
+<dd>x = y = 0</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>r1 <span style="color:#f92672">!=</span> 0<span style="color:#f92672">)</span>
+    y <span style="color:#f92672">=</span> 42<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r2 <span style="color:#f92672">=</span> y<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>r2 <span style="color:#f92672">!=</span> 0<span style="color:#f92672">)</span>
+    x <span style="color:#f92672">=</span> 42<span style="color:#f92672">;</span>
+</code></pre></div><p>这段程序没有使用任何显式同步操作, 但是, 当程序顺序一致执行时, 两个写操作都不会发生, 没有写操作就没有数据竞争, 根据定义, 程序是正确同步的. 如果实现支持 SC for DRF, 则执行结果只能是 r1 == r2 == 0, 但是, HBMM 却允许 r1 == r2 == 42 出现.</p>
+<p>尽管 HBMM 是不充分的, 但是它定义了一个良好的外边界, JMM 比 HBMM 更严格, <em>所有的 JMM 执行都是 HBMM 执行, 所有的 JMM 实现也都必须是 HBMM 实现.</em></p>
+<p>从以上两个例子中可以看出, 在 HBMM 和 JMM 之间缺失的重要一环, 是因果性. 两个例子产生意外结果的执行中都存在因果关系循环、自我证明行为. JMM 必须避免因果循环关系存在, 然而这并不容易, 难点在于某些看上去存在循环的执行结果实际上是合法的. 例如:</p>
+<p><strong>例 8.</strong> 看似存在因果关系循环的程序</p>
+<dl>
+<dt>初始条件</dt>
+<dd>a = 0, b = 1</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+r2 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>r1 <span style="color:#f92672">==</span> r2<span style="color:#f92672">)</span>
+    b <span style="color:#f92672">=</span> 2<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r3 <span style="color:#f92672">=</span> b<span style="color:#f92672">;</span>
+a <span style="color:#f92672">=</span> r3<span style="color:#f92672">;</span>
+</code></pre></div><p>以上程序是否可能产生 r1 == r2 == r3 == 2 的结果? 看上去和例 7 有点类似, 是因果关系循环导致的结果. 但是这个结果在多数系统上是允许的, JMM 也允许这种结果, 因为要允许编译器进行以下优化:</p>
+<ol>
+<li>消除对 a 的冗余读取操作, 将 r2 = a 替换为 r2 = r1;</li>
+<li>进一步地, 认为 r1 == r2 永远为true, 消除分支判断;</li>
+<li>将必然执行的 b = 2 提前.</li>
+</ol>
+<p>经过编译器优化的 T1 的程序变成了:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">b <span style="color:#f92672">=</span> 2<span style="color:#f92672">;</span>
+r1 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+r2 <span style="color:#f92672">=</span> r1<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+</code></pre></div><p>现在看, r1 == r2 == r3 == 2 是程序 SC 执行的可能结果. 所以说, 简单的编译器优化可能造成貌似因果循环的结果.</p>
+<p>这里有一点需要注意的, JMM 定义的是一个抽象的机器的可能行为, 而 JVM 实现是一个真实的机器, 我们的目的是 <em>真实实现的可能结果, 是抽象机器可能结果的子集</em>, 即不发生违反 JMM 定义的结果. 通过以上优化, JMM 允许的某些结果不会在实现中出现了, 但这是允许的.</p>
+<p>再看另一个例子.</p>
+<p><strong>例 9</strong>. 全局分析优化</p>
+<dl>
+<dt>初始条件</dt>
+<dd>x = y = 0</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+r2 <span style="color:#f92672">=</span> r1 <span style="color:#f92672">|</span> 1<span style="color:#f92672">;</span>
+y <span style="color:#f92672">=</span> r2<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r3 <span style="color:#f92672">=</span> y<span style="color:#f92672">;</span>
+x <span style="color:#f92672">=</span> r3<span style="color:#f92672">;</span>
+</code></pre></div><p>JMM 允许以上程序执行生成 r1 == r2 == r3 == 1 这样看似存在循环依赖的结果. 编译器通过跨线程分析可知, x 和 y 的值只能是 0 或 1, 因此, r2 的值一定是1, 因此可以将对 y 写入 1 放到对 x 的读操作之前执行.</p>
+<h3 id="执行的迭代验证">执行的迭代验证</h3>
+<p>现在, JMM 设计的关键问题就成了, 如何正式定义因果性的概念, 从而约束例 5 和例 7 中的不当结果出现, 但又允许例 8 和例 9 的结果.</p>
+<p><em>(因果性的处理和 JMM 的正式定义应该是 JLS 中比较 &ldquo;烧脑&rdquo; 的部分了, 还在努力理解中, 尚有不少未能贯通之处, 以下很有可能理解存在偏差, 记之以待后续学习中印证、修正和补充.)</em></p>
+<p>以上例子中待检验结果的产生, 都来源于系统对程序执行顺序的一个类似的改变, 就是相比纯粹的 SC 执行, 把某个写操作提前了. 比如例 5 提前执行了 y = 42,  例 8 提前执行了 b = 2. 问题于是成了: 将什么样的写操作提前是没有问题的? 一个直观的观察结果是, 例 8 中的 b = 2 即使在顺序执行中也可能发生, 而例 5 的 y = 42, 则不可能出现在顺序执行中.</p>
+<p>要证明将一个写操作前移是合法的, 我们要找到一个发生了这种操作的<em>良态执行 (well-behaved execution)</em>, 用这个执行去证明待验证的执行. JMM 采用的方式是, 执行一个迭代过程, 在每一步迭代中, 提交一个或多个操作到一个集合中. 允许一个操作提交的前提是能够找到一个包含此操作的良态执行, 要求这个良态执行也包含已经提交的操作集合. 如果能够通过这样的迭代建立起一个执行, 产生待验证的结果, 则结果是合法的.</p>
+<p>相信这段表述已经让大多数人摸不着头脑了.</p>
+<p>以下是我的理解. 首先说明, 我们只考虑 HBMM 执行. 一次执行上存在一个全序关系, 我们叫它因果顺序, 在这个顺序中, 前面的操作可以导致后面的操作 (至少是不禁止后面的操作). 我们验证某个执行是否合法, 可以按照其因果顺序逐一验证 (justify) 各个操作, 待验证的操作必须能够符合它之前已经出现的所有操作. 经过验证的操作集合由前向后逐步扩展. 我们把因果顺序的前若干个操作, 称为执行的前缀 (prefix). 每一步验证, 我们要找到一个良态执行, 这个良态执行要满足: 已经验证过的操作集合也是它的前缀. 未验证的操作只有也在这个良态执行中出现, 才能进行验证. 否则验证失败, 执行非法.</p>
+<p>我们先介绍一下良态执行的选择, 然后举例说明一下这个过程.</p>
+<p>什么样的执行是良态执行? 我们前面用 SC 执行中是否会执行操作来区分例 5 和例 8, 直觉上 SC 执行是一个适合的标准, 但是 JMM 的设计者发现, 这对于某些复杂的情况过于宽松. 经过一些尝试, 最终的结论是: <em>一个写操作的发生不依赖于一个返回了数据竞争结果的读操作, 则将其提前不会产生错误的结果</em>.</p>
+<p>这个结论又有点拗口. 我们回顾一下, JMM 执行首先要是 HBMM 执行, 而在 HBMM 中, 一个非 volatile 变量的读操作, 其结果可能来源于两种写操作, 一种是在 happens-before 关系中先于它的, 一种是和它不存在 happens-before 关系的, 不存在 happens-before 的冲突访问就造成了数据竞争. 换句话说, 良态执行要求, 尚未提交的读操作读到的值, 必须是 happens-before 这个读操作的写操作. 按照设计者的说法, 这个良态执行的概念, 确保了已经提交的操作及其值不依赖于未提交的数据竞争.</p>
+<p>在每一步迭代过程中, 我们要先找到一个前缀相同的、 符合上述要求的良态执行, 我们将这个良态执行称为 &ldquo;验证执行&rdquo;, 考察尚未提交的操作, 如果是写操作, 那么只要在验证执行中出现了, 就可以提交 (地址和写入的值不变), 如果是读操作, 则要求不止在验证执行中存在, 而且在待验证执行和验证执行中读到的值操作都来自已经提交的写操作 (但可以是不同的写操作), 才可以提交. 如果经过迭代, 所有的操作都提交了, 则认为执行是合法的.</p>
+<p>以上是 JMM 验证执行合法性过程的一个非正式表述, 其正式表述的形成过程也经历了多次 &ldquo;迭代&rdquo;, 才成为最终的 JSR-133 中的版本 (Bill Pugh 曾在邮件列表中<a href="http://www.cs.umd.edu/~pugh/java/memoryModel/archive/1972.html"target="_blank">悬赏 $100 寻找定义的漏洞</a>). 以下例子用来演示迭代验证过程, 并试图表现非正式描述和正式定义之间的对应:</p>
+<p><strong>例 10.</strong> 合法执行的迭代验证</p>
+<dl>
+<dt>初始条件</dt>
+<dd>x = y = 0</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</span>
+y <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r2 <span style="color:#f92672">=</span> y<span style="color:#f92672">;</span>
+x <span style="color:#f92672">=</span> r2<span style="color:#f92672">;</span>
+</code></pre></div><dl>
+<dt>待验证结果</dt>
+<dd>r1 == r2 == 1</dd>
+</dl>
+<p><strong>验证过程</strong></p>
+<p>下表列出了每次迭代提交的操作以及对应的良态执行, 注意两点:</p>
+<ol>
+<li>演示中包含了程序中没有显式出现的操作: 为 x 和 y 写入默认值 0;</li>
+<li>作为正式定义的应用示例, 表头标记的 $C_n$ 和 $E_{n+1}$ 对应于正式定义中的记法, 例如表格第一行显示的是 $C_0$ 和 $E_1$, 已提交操作中的操作序列就是逐渐形成的 $E$, 可对照 JLS 查看.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th align="center">迭代 $n$</th>
+<th align="left">已提交操作 $C_n$</th>
+<th align="left">良态执行 $E_{n+1}$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="left">∅</td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1; // 可提交<br>r2 = y; // 读到 0<br>x = r2;<br>r1 = x; // 读到 0</pre></td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;</pre></td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1; // 已提交<br><br>r2 = y; // 读到 0, 可读到 y = 1, 可提交<br>x = r2;<br>r1 = x; // 读到 0</pre></td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y; // 读到 1</pre></td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y; // 已提交<br><br>x = r2; // 可提交<br>r1 = x; // 读到 0</pre></td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y; // 读到 1<br>x = r2;</pre></td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y;<br>x = r2; // 已提交<br><br>r1 = x; // 读到 0, 可读到 x = 1, 可提交</pre></td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y; // 读到 1<br>x = r2;<br>r1 = x; // 读到 1</pre></td>
+<td align="left"><pre>x = 0; <br>y = 0; <br>y = 1;<br>r2 = y;<br>x = r2;<br>r1 = x; // 已提交</pre></td>
+</tr>
+</tbody>
+</table>
+<p>说明:</p>
+<ol>
+<li>开始状态, 提交集合为空集, 因此所有读操作都是未提交操作, 由于 happens-before 关系仅存在于默认值写操作和其它操作之间, 良态执行的读操作都应读到默认值 0.</li>
+<li>这时, 所有未提交的写操作 (即所有写操作) 都可以提交, 所有的读操作读到的都是未提交的写操作, 因而都不能提交. 考虑期望结果是读到 1, 我们提交写默认值和 y = 1 这三个操作. 在现在的良态执行中, 未提交的读操作读到的值仍然是 0.</li>
+<li>未提交的操作中, 写操作 x = r2 (0) 可以提交, 但是我们期望 x 的值是 1, 所以不提交它. 读操作中, r2 = y 期望读到的 y = 1 已经提交, 因而可以提交, 而 r1 = x 期望读到的 x = 1 在已提交集合中不存在, 不能提交. 综上, 我们提交 r2 = y. 未提交的 r1 = x 读到的值仍然是 0, x = r2 现在写入的是 1.</li>
+<li>提交 x = r2 (1) 操作.</li>
+<li>提交 r1 = x 操作, 提交完毕, 结果合法.</li>
+</ol>
+<p>再证明一下例 8. 为了阅读方便, 我把它复制到下面:</p>
+<dl>
+<dt>初始条件</dt>
+<dd>a = 0, b = 1</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+r2 <span style="color:#f92672">=</span> a<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>r1 <span style="color:#f92672">==</span> r2<span style="color:#f92672">)</span>
+    b <span style="color:#f92672">=</span> 2<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r3 <span style="color:#f92672">=</span> b<span style="color:#f92672">;</span>
+a <span style="color:#f92672">=</span> r3<span style="color:#f92672">;</span>
+</code></pre></div><dl>
+<dt>待验证结果</dt>
+<dd>r1 == r2 == r3 == 2</dd>
+</dl>
+<p><strong>验证过程</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">迭代 $n$</th>
+<th align="left">已提交操作 $C_n$</th>
+<th align="left">良态执行 $E_{n+1}$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="left">∅</td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>r1 = a; // 读到 0<br>r2 = a; // 读到 0<br>b = 2;<br>r3 = b; // 读到 1<br>a = r3;</pre></td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;</pre></td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2; // 已提交<br><br>r1 = a; // 读到 0<br>r2 = a; // 读到 0<br>r3 = b; // 读到 1, 可以读到 b = 2, 可提交<br>a = r3;</pre></td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b; // 读到 2</pre></td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b; // 已提交<br><br>r1 = a; // 读到 0<br>r2 = a; // 读到 0<br>a = r3; // 写入 2, 可提交</pre></td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b; // 读到 2<br>a = r3; // 写入 2</pre></td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b;<br>a = r3; // 已提交<br><br>r1 = a; // 读到 0, 可读到 a = 2, 可提交<br>r2 = a; // 读到 0, 可读到 a = 2, 可提交</pre></td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b; // 读到 2<br>a = r3; // 写入 2<br>r1 = a; // 读到 2<br>r2 = a; // 读到 2</pre></td>
+<td align="left"><pre>a = 0;<br>b = 1;<br>b = 2;<br>r3 = b;<br>a = r3;<br>r1 = a;<br>r2 = a; // 已提交</pre></td>
+</tr>
+</tbody>
+</table>
+<p>最后再看一个反例. 我们来证明例 5 不允许出现 x == y == 42 的结果. 为了出现这个结果, 我们希望所有操作写入和读到的值都是 42, 因此要找到一个良态执行, 其中待提交的写操作写入的值 (来自 r1 或 r2) 是 42, 但是在良态执行中 r1 和 r2 的值只能是 happens-before 对应读操作的写操作写入的值, 也就是初始值 0. 因此所有操作都无法提交, 结果是非法的.</p>
+<p>更多的例子见 <a href="http://www.cs.umd.edu/~pugh/java/memoryModel/unifiedProposal/testcases.html"target="_blank">Causality Test Cases</a>.</p>
+<p>JMM 的定义中还包含一节内容, 描述某些无法在有限时间内结束的程序的执行规则, 这里暂不讨论.</p>
+<p>到此为止, 我们谈到了 JMM 中主要的规则定义, 可以看到, JMM 定义体现的作用主要在于如何判断一个执行是否合法. 而对于具体实现的指导作用则不是很突出. 这方面可以参考有关文献, 如 <em><a href="http://gee.cs.oswego.edu/dl/jmm/cookbook.html"target="_blank">Doug Lea&rsquo;s JSR-133 cookbook</a></em>, 这里暂时就不再涉及了.</p>
+<h3 id="final-字段">Final 字段</h3>
+<h4 id="final-字段的特殊性">Final 字段的特殊性</h4>
+<p>声明为 final 的字段只会初始化一次, 正常情况下不会再修改, 这个特点导致 final 字段在两方面具有特殊性.</p>
+<p>从实现角度讲, 编译器可以有很大的自由越过同步屏障移动对 final 字段的读操作, 比如, 编译器可以允许将一个 final 字段缓存在寄存器中, 且不需要像其它非 final 字段一样重新加载它.</p>
+<p>对于程序来说, 可以利用其特殊性<em>在不使用同步的情况实现线程安全的不可变对象</em> (thread-safe immutable object). JMM 为适当构造的不可变对象提供了特殊的线程安全保证, 使其可以在所有线程间安全共享, 即使在线程间传递对此对象的引用时存在数据竞争, 这个特殊保证称为<em>初始化安全性</em> (<em>Initialization Safety</em>).</p>
+<p>不可变对象的初始化安全性来自以下关于 final 字段的特殊规则: 一个对象的构造方法结束时, 就可以说这个对象是完全初始化过 (completely initialized) 的, JMM 保证, 如果一个线程只能在某个对象完全初始化之后才能引用到这个对象, 则这个线程一定可以读到这个对象的 final 字段经过正确初始化的值.</p>
+<p>这个特性的使用模式也比较简单: 在对象的构造方法中对 final 字段赋值, 在构造方法执行结束之前, 不要把这个对象的引用写入到任何其它线程可以观察到的地方 (比如赋值给其它线程可访问的 static 字段, 启动另一个线程等). 这样, 当另一个线程访问到这个对象的 final 字段时, 读到的总是正确初始化的值 (而不会是默认值). 进一步的, 对于这些 final 字段间接引用的对象或数组, 其它线程观察到至少是 final 字段初始化时这些对象的状态 (或更新的状态).</p>
+<p>下面的例子可以说明 final 字段与非 final 字段的区别.</p>
+<p><strong>例 11.</strong> final 字段的特殊语义</p>
+<p><strong>FinalFieldExample 类:</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FinalFieldExample</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">int</span> x<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">int</span> y<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">static</span> FinalFieldExample f<span style="color:#f92672">;</span>
+
+    <span style="color:#66d9ef">public</span> <span style="color:#a6e22e">FinalFieldExample</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        x <span style="color:#f92672">=</span> 3<span style="color:#f92672">;</span>
+        y <span style="color:#f92672">=</span> 4<span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">writer</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        f <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> FinalFieldExample<span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">reader</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>f <span style="color:#f92672">!=</span> <span style="color:#66d9ef">null</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span><span style="color:#a6e22e">x</span><span style="color:#f92672">;</span>
+            <span style="color:#66d9ef">int</span> j <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span><span style="color:#a6e22e">y</span><span style="color:#f92672">;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p><strong>线程 T1</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">FinalFieldExample<span style="color:#f92672">.</span><span style="color:#a6e22e">writer</span><span style="color:#f92672">();</span>
+</code></pre></div><p><strong>线程 T2</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">FinalFieldExample<span style="color:#f92672">.</span><span style="color:#a6e22e">writer</span><span style="color:#f92672">();</span>
+</code></pre></div><p>我们看到, 两个线程对 static 字段 f 的访问存在数据竞争, 假设 T2 读到了 T1 写入的值, 因为 y = 4 与对 f 的写操作可能乱序执行, f.y 读取到的可能是 0, 类似的分析我们在前面已经做过, 不再详述. final 字段的特殊性体现在, T2 中读到的 f.x 的值一定是 3.</p>
+<p>不可变对象的初始化安全性, 确保了即使对其存在缺少同步的误用或恶意使用, 也不会造成安全性问题. 例如, Java 语言中的很多安全特性要依赖于 String 对象是不可变的, String 对象的操作不使用同步, 虽然 String 类的实现中不存在数据竞争, 但其它使用 String 对象的代码可能引入数据竞争. 假设 String 类的字段不是 final 字段, 在下面的例子中, 可能出现不正确的结果: T2 在执行 equals() 方法时观察到的是 “/tmp”, 打印出的却是 “/usr”. 如果 T2 执行的不是打印而是某些敏感的文件访问操作, 则 T1 的操作可能造成安全性问题.</p>
+<p><strong>例 12.</strong> String 类的安全性</p>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">Global<span style="color:#f92672">.</span><span style="color:#a6e22e">s</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/tmp/usr&#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">substring</span><span style="color:#f92672">(</span>4<span style="color:#f92672">);</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">String myS <span style="color:#f92672">=</span> Global<span style="color:#f92672">.</span><span style="color:#a6e22e">s</span><span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>myS<span style="color:#f92672">.</span><span style="color:#a6e22e">equals</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;/tmp&#34;</span><span style="color:#f92672">))</span>
+    System<span style="color:#f92672">.</span><span style="color:#a6e22e">out</span><span style="color:#f92672">.</span><span style="color:#a6e22e">println</span><span style="color:#f92672">(</span>myS<span style="color:#f92672">);</span>
+</code></pre></div><blockquote>
+<p>注: 某些特殊情况可能需要对 final 字段进行后期修改 (如反序列化), 实现方式可能是反射或其它实现相关的方法. JLS 中有专门的章节讨论这种情况, 主要是引入了 final field safe context 的概念, 为了叙述的简便, 这里我们暂不考虑后期修改 final 字段的情况.</p>
+</blockquote>
+<h4 id="-final-字段的语义定义">* Final 字段的语义定义</h4>
+<p>这里粗略看一下 JMM 是怎样正式定义以上特性的.</p>
+<h5 id="非正式的描述">非正式的描述</h5>
+<p>JMM 定义了额外的规则, 能够在一个 final 字段的初始化写操作与其它线程的某个读操作之间建立起额外的 happens-before 关系, 使得这个读操作可以读到初始化写操作. 如果能确保这个 happens-before 关系存在, 就可以保证读操作只能读到 final 字段在构造方法中得到的初始值 (因为对 final 字段, 除去默认值写操作和初始化写操作, 不存在其它写操作).</p>
+<h5 id="freeze-操作">freeze 操作</h5>
+<p>暂不考虑构造完成后对 final 字段的修改, 可以认为只有在对象的构造方法完成时, 会执行一个 freeze 操作, freeze 操作会 &ldquo;冻结&rdquo; 这个对象的 final 字段的状态, 其后 final 字段的值不再变化.</p>
+<h5 id="额外的-happens-before-关系">额外的 happens-before 关系</h5>
+<p>针对 final 字段的特殊语义, JMM 对 happens-before 顺序提供了补充或可选规则, 一个线程要读取在其它线程创建的对象的 final 字段, 只能应用这些新规则确定的顺序, 而对于非 final 字段, 这些规则和普通规则共同决定顺序.</p>
+<p>JMM 首先定义了两个额外的偏序关系, 已知一个执行, 可以根据一些约束条件确定这些关系.</p>
+<dl>
+<dt>解引用链 (Dereference Chain, $\xrightarrow{dc}$)</dt>
+<dd>如果 $a$ 是线程 $t$ 上对某个在其它线程上构造的对象 $o$ 的一个字段的读或写操作, 那么在 $t$ 上一定存在一个能够看到 $o$ 的地址的读操作 $r$, 满足 $r \xrightarrow{dc} a$.</dd>
+<dd>注意可能有某些操作 $a$ 满足 $a\xrightarrow{dc}a$.</dd>
+<dt>内存链 (Memory Chain, $\xrightarrow{mc}$)</dt>
+<dd>有若干个关于内存链的约束:</dd>
+<dd>a. 如果读操作 $r$ 观察到写操作 $w$, 则有 $w\xrightarrow{mc}r$.</dd>
+<dd>b. 若 $r\xrightarrow{dc}a$, 则必有 $r\xrightarrow{mc}a$.</dd>
+<dd>c. 如果 $w$ 是线程 $t$ 上对对象 $o$ 的地址的写操作, 且 $o$ 不是在 $t$ uh 构造的, 则 $t$ 上一定存在一个对 $o$ 的地址的读操作 $r$ 满足 $r \xrightarrow{mc}w$.</dd>
+</dl>
+<p>注意, 给定执行的部分行为, 可能存在多个解引用链和内存链满足以上约束.</p>
+<p>这两个偏序关系结合普通的 happens-before 关系可以确定额外的 happens-before 关系, 规则如下: 给定一个读操作 $w$, 一个 freeze 操作 $f$, 一个非读写 final 字段的操作 $a$, 一个 $f$ 冻结的 final 字段的读操作 $r_1$, 一个读操作 $r_2$, 满足 $w\xrightarrow{hb}f\xrightarrow{hb}a\xrightarrow{mc}r_1\xrightarrow{dc}r2$, 则在考虑 $r_2$ 能读到的值的时候, 我们认为有 $w\xrightarrow{hb}r_2$ (但是这个关系不与其它的 happens-before 构成传递性闭合, 即不根据传递性生成其它 happens-before 关系). 注意 $r_1$ 和 $r2$ 可能是同一个操作.</p>
+<p>以上规则可以分为两种情况:</p>
+<ol>
+<li>$w$ 是对 final 字段的写操作, $r_1$ 和 $r_2$ 是同一个操作, 则说明读操作 $r_2$ 可以读到 final 字段的正确值.</li>
+<li>$w$ 是构造方法中对非 final 字段的写入, $r_2$ 是对此字段的读取, $r_2$ 可能读到 $w$ 写入的值.</li>
+</ol>
+<p>我们只看第一种针对 final 字段的情况, 即 $w$ 代表构造方法中对 final 字段的写操作, $r_1 = r_2$ 为对 final 字段的读操作. 考虑到 $f$ 发生在构造方法结束时, 故一定有 $w\xrightarrow{hb}f$, 于是上述条件可以简化为 $f\xrightarrow{hb}a\xrightarrow{mc}r_1$.</p>
+<p>前面说过, 给定执行的部分行为, 内存链有多种可能, 如果每一种可能都形成满足上述条件的序列, 换句话说, 没有任何一种内存链的选择可以不产生 $f\xrightarrow{hb}a\xrightarrow{mc}r_1$ 这样的序列 (即 $r_1$ 所在线程不可能在 freeze 之前引用到 final 字段所属对象), 则可以保证 $r_1$ 读到的必然是 final 字段的正确初始化值.</p>
+<p>我们用一个例子来说明这种定义如何对应到上一节的规则描述上.</p>
+<p><strong>例 13</strong>. Final 字段语义分析</p>
+<dl>
+<dt>初始条件</dt>
+<dd>f 为 final 字段, 默认值为 0</dd>
+</dl>
+<p><strong>线程 T1</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r1<span style="color:#f92672">.</span><span style="color:#a6e22e">f</span> <span style="color:#f92672">=</span> 42
+p <span style="color:#f92672">=</span> r1<span style="color:#f92672">;</span>
+freeze r1<span style="color:#f92672">.</span><span style="color:#a6e22e">f</span><span style="color:#f92672">;</span>
+q <span style="color:#f92672">=</span> r1<span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T2</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r2 <span style="color:#f92672">=</span> p<span style="color:#f92672">;</span>
+r3 <span style="color:#f92672">=</span> r2<span style="color:#f92672">.</span><span style="color:#a6e22e">f</span><span style="color:#f92672">;</span>
+r4 <span style="color:#f92672">=</span> q<span style="color:#f92672">;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>r2 <span style="color:#f92672">==</span> r4<span style="color:#f92672">)</span>
+    r5 <span style="color:#f92672">=</span> r4<span style="color:#f92672">.</span><span style="color:#a6e22e">f</span><span style="color:#f92672">;</span>
+</code></pre></div><p><strong>线程 T3</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">r6 <span style="color:#f92672">=</span> q<span style="color:#f92672">;</span>
+r7 <span style="color:#f92672">=</span> r6<span style="color:#f92672">.</span><span style="color:#a6e22e">f</span><span style="color:#f92672">;</span>
+</code></pre></div><p>先说结论: 假设 T2 和 T3 中对 p 和 q 的读操作都读到了 T1 写入的值, 则 r7 一定是 42, r3 和 r5 可能是 0 或 42.</p>
+<p>下图中标示出了各操作间存在的重要顺序关系及确定这种关系的约束条件, 如 mc(a) 表示由约束 a 确定的 $\xrightarrow{mc}$ 顺序.</p>
+<p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  href="final-field-sementics.png?width=600"><img class="img" src="final-field-sementics.png?width=600"
+        alt width="600"
+        /></a></span></span></p>
+<p>从图中可以看出, 对于 T3 中的读操作来说 r7 = t6.f 来说, 唯一能确定的内存链构成了上述序列, 所以一定能读到 T1 写入的 42. 对于 T2 的读操作 r3 = r2.f, 则没有构成特殊的 happens-before 关系, 所以可能读到 0. 微妙的是 r5 = r4.f 这个读操作, 图中的虚线满足上述规则, 但同时存在另一个不满足规则的内存链关系, 所以也不能保证读到 42. 体现在实现中, 就是编译器可以认为 r4.f 和 r2.f 是对同一个对象的相同 final 字段的引用, 因为 final 字段不可变, 所以可以将第二个读操作替换为 r5 = r3.</p>
+<h3 id="总结">总结</h3>
+<p>以上是 JLS 中 Java 内存模型的主要内容的介绍, 内容大都直接来自 JLS 和 JSR-133. 其它一些更加细节的内容, 例如 Word Tearing、Double 和 Long 的非原子性写入等, 在此略过.</p>
+<p>对于 JMM 正式定义的解说占了不少篇幅, 但这部分还有待继续加深和修正理解. 对于程序编写来说, 最重要的结论, 我认为无非是两点:</p>
+<ol>
+<li>JMM 保证正确同步的程序, 其执行是 SC 执行, happens-before 关系定义了 &ldquo;正确同步&rdquo;.</li>
+<li>JMM 为 final 字段提供了特殊的初始化安全性保证.</li>
+</ol>
+<h2 id="主要参考文献">主要参考文献</h2>
+<ol>
+<li><a href="http://sadve.cs.illinois.edu/Publications/computer96.pdf"target="_blank">S.V. Adve, K. Gharachorloo. <em>Shared Memory Consistency Models: A Tutorial</em>. IEEE Computer, December 1996, 66-76.</a><br>这是一篇得到广泛引用的关于内存一致性模型的介绍, 作者之一是 JMM 的设计者之一 Sarita Adve 教授.</li>
+<li><a href="http://lamport.azurewebsites.net/pubs/pubs.html#multi"target="_blank">L. Lamport. <em>How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs</em>. IEEE Transactions on Computers C-28, 9 (September 1979) 690-691.</a><br> 首次提出顺序一致性模型的定义. 我尝试做了<a href="/posts/make-mp-computer-correctly/"><em>翻译</em></a>.</li>
+<li>John L. Hennessy, David A Patterson. <em>Computer Architecture: A Quantitative Approach, 6th Edition</em>.Morgan Kaufmann, 2017<br>§5.6 介绍了内存一致性模型.</li>
+<li>D. J. Sorin et al. <em>A Primer on Memory Consistency and Cache Coherence</em>. Morgan and Claypool Publishers, 2011.<br> 关于 SC模型的正式定义、TSO模型等内容大量参考了这本书.</li>
+<li>David Liben-Nowell. <em>Discrete Mathematics for Computer Science</em>. Wiley, 2017.<br>关于二元关系理论的知识可以参考本书第 8 章.</li>
+<li><a href="https://docs.oracle.com/javase/specs/jls/se7/jls7.pdf"target="_blank">James Gosling et al. <em>The Java® Language Specification, Java SE 7 Edition</em>.</a> <br>§17.4 定义了 Java 内存模型.</li>
+<li><a href="http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf"target="_blank"><em>JSR-133: Java™ Memory Model and Thread Specification</em>.</a> <br> JSR-133 相比于最终集成到 JLS 中的内容多了一些非正式的内容, 比 JLS 要易读一些.</li>
+<li><a href="http://rsim.cs.uiuc.edu/Pubs/popl05.pdf"target="_blank">Jeremy Manson, William Pugh, Sarita V. Adve. <em>The Java Memory Model</em>. Proceedings of the 32nd Symposium on Principles of Programming Languages (POPL) Jan. 2005.</a><br>来自 JMM 的三位主要设计者, 比 JSR-133 内容更丰富, 涉及了 JMM 的设计要求、实现考虑、SC for DRF 证明等.</li>
+<li><a href="http://www.cs.umd.edu/~pugh/java/memoryModel/">http://www.cs.umd.edu/~pugh/java/memoryModel/</a> <br> JMM 的设计者之一 Bill Pugh 教授 (他还开发了 FindBugs, 发明了 Skip list&hellip;) 维护的页面, 集合了 JMM 的各种资料, 包括一个邮件列表的归档, 记录了 JSR-133 形成过程中的大量讨论.</li>
+<li>Brian Goetz et al. <em>Java Concurrency in Practice</em>. Addison-Wesley, 2006.<br>应该算是 Java 并发编程的必读书了吧, 最后一章介绍了 Java 内存模型.</li>
+</ol>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>&ldquo;&hellip; is a specification of the allowed behavior of multithreaded programs executing with shared memory.&quot;, 出自参考文献 [4]. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/>内存模型</a></section></div><section class="article navigation"><p><a class="link" href="/posts/make-mp-computer-correctly/"><span class="li">&rarr;</span>[译] 如何制造正确执行多进程程序的多处理器计算机</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script></div>
+</body>
+
+</html>

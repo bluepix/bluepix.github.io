@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Posts on 诗川的笔记</title>
-    <link>/posts/</link>
-    <description>Recent content in Posts on 诗川的笔记</description>
+    <title>Java on 诗川的笔记</title>
+    <link>/tags/java/</link>
+    <description>Recent content in Java on 诗川的笔记</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
     <lastBuildDate>Mon, 16 Mar 2020 08:28:56 +0800</lastBuildDate>
     
-        <atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
+        <atom:link href="/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -19,16 +19,6 @@
       
       <guid>/posts/on-jmm/</guid>
       <description>引言 Java 内存模型 (Java Memory Model, JMM) 是 Java 并发编程中一个较为底层的话题, Java 并发编程中的各种上层策略, 如安全发布 (Safe publication)、使用同步 (synchronization) 等, 其有</description>
-      
-    </item>
-    
-    <item>
-      <title>[译] 如何制造正确执行多进程程序的多处理器计算机</title>
-      <link>/posts/make-mp-computer-correctly/</link>
-      <pubDate>Sat, 14 Mar 2020 17:47:46 +0800</pubDate>
-      
-      <guid>/posts/make-mp-computer-correctly/</guid>
-      <description>注： 本文译自 Leslie Lamport 发表于 1979 年 9 月的 IEEE Transactions on Computers 上的文章 How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs, 其重要意义在于正式定义了顺序一致性. Lamport 于 2013 年获图灵奖, 其获奖成就之一就</description>
       
     </item>
     
