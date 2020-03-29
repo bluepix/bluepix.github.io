@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>Java 内存模型入门&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.1cb84ec14166626c150a4df437227d31bbecc8cb48d56a08c04200adf5e06564017428aa1973540f49d1d293f7ac04a2.css" integrity="sha384-HLhOwUFmYmwVCk30NyJ9MbvsyMtI1WoIwEIArfXgZWQBdCiqGXNUD0nR0pP3rASi"><link rel="shortcut icon" href="/img/favicon.ico">
+<meta name="supported-color-schemes" content="light dark"><title>Java 内存模型入门&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.7e42efe65b8a17eac676ba0ca8b84cefdcb3d184d5d7d2b276fc39d6aaa62ef5d7c93096eec02bb3fc63907937e237a8.css" integrity="sha384-fkLv5luKF&#43;rGdroMqLhM79yz0YTV19Kydvw51qqmLvXXyTCW7sArs/xjkHk34jeo"><script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<link rel="shortcut icon" href="/img/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
-        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
-    <h1 class="article title">Java 内存模型入门</h1><p class="article date">2020-03-16</p></section><article class="article markdown-body">
-<section class="markdown-body toc">
-    <header>
-    <h2>目录</h2>
-    </header>
-    <nav id="TableOfContents">
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
   <ul>
     <li><a href="#引言">引言</a></li>
     <li><a href="#了解有关概念">了解有关概念</a>
@@ -43,8 +42,45 @@
     <li><a href="#主要参考文献">主要参考文献</a></li>
   </ul>
 </nav>
+    </div>
 </section>
-<p><a name="top"></a></p>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">Java 内存模型入门</h1><p class="article date">2020-03-16</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#引言">引言</a></li>
+    <li><a href="#了解有关概念">了解有关概念</a>
+      <ul>
+        <li><a href="#什么是内存模型">什么是内存模型</a></li>
+        <li><a href="#高级语言内存模型">高级语言内存模型</a></li>
+        <li><a href="#java-内存模型简介">Java 内存模型简介</a></li>
+      </ul>
+    </li>
+    <li><a href="#几种典型的内存模型">几种典型的内存模型</a>
+      <ul>
+        <li><a href="#顺序一致性模型">顺序一致性模型</a></li>
+        <li><a href="#total-store-order-模型">Total Store Order 模型</a></li>
+        <li><a href="#release-consistency-模型">Release Consistency 模型</a></li>
+      </ul>
+    </li>
+    <li><a href="#java-内存模型解说">Java 内存模型解说</a>
+      <ul>
+        <li><a href="#java-内存模型的要求">Java 内存模型的要求</a></li>
+        <li><a href="#过渡模型-happens-before-内存模型">过渡模型: Happens-Before 内存模型</a></li>
+        <li><a href="#因果关系-causality-要求">因果关系 (Causality) 要求</a></li>
+        <li><a href="#执行的迭代验证">执行的迭代验证</a></li>
+        <li><a href="#final-字段">Final 字段</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+    <li><a href="#主要参考文献">主要参考文献</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
 <h2 id="引言">引言</h2>
 <p>Java 内存模型 (Java Memory Model, JMM) 是 Java 并发编程中一个较为底层的话题, Java 并发编程中的各种上层策略, 如安全发布 (Safe publication)、使用同步 (synchronization) 等, 其有效性都建立在 JMM 的基础上, 对 JMM 做一些必要的了解, 可以帮助我们更好地理解和使用这些上层策略.</p>
 <p>但不可否认, Java 语言规范 (JLS) 中关于 JMM 的内容, 尤其是其正式定义部分, 个人感觉阅读起来较为吃力. 抛开个人水平不谈, 我想可能有以下三个原因导致这部分在客观上相对 &ldquo;难读&rdquo;: 一是 JLS 本身的性质要求其表述严谨、准确、抽象, 二是理解这些内容要求读者具备一些内存模型、关系理论方面的准备知识, 三是, 现行的 JMM 是一个<a href="http://www.cs.umd.edu/~pugh/java/memoryModel/archive/index.html"target="_blank">长期讨论研究</a>的结果, 而 JLS 中只能呈现最终的、正式的 &ldquo;干货&rdquo;, 阅读时一定程度上面临上下文的缺失.</p>
@@ -870,7 +906,9 @@ r7 <span style="color:#f92672">=</span> r6<span style="color:#f92672">.</span><s
 </li>
 </ol>
 </section>
-</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/>内存模型</a></section></div><section class="article navigation"><p><a class="link" href="/posts/make-mp-computer-correctly/"><span class="li">&rarr;</span>[译] 如何制造正确执行多进程程序的多处理器计算机</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/>内存模型</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/posts/make-mp-computer-correctly/"><span class="li">&rarr;</span>[译] 如何制造正确执行多进程程序的多处理器计算机</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
     <p class="copyright">©2020 bluepix</p>
     <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
         target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
@@ -884,7 +922,7 @@ r7 <span style="color:#f92672">=</span> r6<span style="color:#f92672">.</span><s
                     {left: '$', right: '$', display: false},
                     {left: '\\(', right: '\\)', display: false}
                 ]
-            });"></script></div>
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
 </body>
 
 </html>
