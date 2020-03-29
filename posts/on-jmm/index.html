@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>Java 内存模型入门&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.7e42efe65b8a17eac676ba0ca8b84cefdcb3d184d5d7d2b276fc39d6aaa62ef5d7c93096eec02bb3fc63907937e237a8.css" integrity="sha384-fkLv5luKF&#43;rGdroMqLhM79yz0YTV19Kydvw51qqmLvXXyTCW7sArs/xjkHk34jeo"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<meta name="supported-color-schemes" content="light dark"><title>Java 内存模型入门&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.73e0e5ed35217e85e34c8e28af99ed860e1c4f3a995a8690676313722852a69f0208aac60d5782f8cd1cf0ed6601837e.css" integrity="sha384-c&#43;Dl7TUhfoXjTI4or5nthg4cTzqZWoaQZ2MTcihSpp8CCKrGDVeC&#43;M0c8O1mAYN&#43;"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
 <script>
     window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
 </script>
@@ -169,7 +169,7 @@ P1: a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
 <h3 id="高级语言内存模型">高级语言内存模型</h3>
 <p>上文中我们谈到的主要是底层程序与硬件之间的界面, 事实上, 在用高级语言编写程序时, 程序与系统的界面就上移到了程序与编译器、运行时之间, 因为同样的原因, 我们也需要为这个界面定义内存模型. 高级语言内存模型与硬件内存模型的关系和区别可以用下图表示, 需要注意的是, 这两类内存模型属于不同层面的抽象, 同一系统中高级语言和硬件不一定采用相同类型的内存模型.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="hll-mm.png?width=600"><img class="img" src="hll-mm.png?width=600"
+  ><img class="img" src="hll-mm.png?width=600"
         alt="hll-mm" width="600"
         /></a></span><span class="caption"><span class="title">a: 高级语言内存模型 <br> b: 硬件内存模型</span></span></span></p>
 <p>相对于硬件内存模型, 高级语言内存模型的定义要面对两个额外的挑战: 一是很多高级语言具有严格的安全 (safety and security) 特性要求需要满足, 二是编译器所能采用的优化手段相比于硬件要广泛的多.</p>
@@ -214,12 +214,12 @@ P1: a <span style="color:#f92672">=</span> 1<span style="color:#f92672">;</span>
 <span style="color:#f92672">}</span>
 </code></pre></div><p>SC 模型要求, 如果 P2 读到了 A 的值为 1, P3 读到了 B 的值为 1, 那么 P3 执行 r1 = A 的操作时读到的 A 的值必然为 1. 即  P2 和 P3 必须同时观察到 P1 中对 A 的写操作. 下图表示一次可能的 SC 执行, 其中虚线表示两个操作发生的先后顺序:</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="sc-exe.png?width=600"><img class="img" src="sc-exe.png?width=600"
+  ><img class="img" src="sc-exe.png?width=600"
         alt="sc-exe" width="600"
         /></a></span><span class="caption"><span class="title">😊 SC 执行</span></span></span></p>
 <p>假设 P2 和 P3 在不同时间观察到写入 A 的操作, 如下图所示, P1 执行 A = 1 操作分为两步, seen by P2 表示写入操作的效果“传递”到 P2 的过程, 类似的, seen by P3 表示写入操作“传递”到 P3 的过程, 由于 P3 上的 read A 操作开始时, seen by P3 还没有完成, P3 读到的值仍然是程序初始写入到 A 的值 0, 因此可以认为 P1 的 A = 1 操作发生在 P3 的 read A 操作之后, 如果所有操作在一个顺序序列中, 则造成了一个矛盾: 序列从 A = 1 开始, 又回到了 A = 1! 因此, 此执行不符合 SC 模型的要求.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="non-sc-exe.png?width=600"><img class="img" src="non-sc-exe.png?width=600"
+  ><img class="img" src="non-sc-exe.png?width=600"
         alt="no-sc-exe" width="600"
         /></a></span><span class="caption"><span class="title">😞 非 SC 执行</span></span></span></p>
 <h4 id="-顺序一致性模型正式定义">* 顺序一致性模型正式定义</h4>
@@ -268,7 +268,7 @@ $$</dd>
 <p>另外一个需要提一下的问题, 是现代硬件大都提供了 RMW (read-modify-write) 类的原子操作指令, 这类指令提出了更严格的执行要求, 其设计的读、写操作在内存顺序上必须连续出现. RMW 的实现在此不做展开.</p>
 <p>我们用一个表格来表示 SC 模型中各种操作的排序规则:</p>
 <p><a target="_blank" rel="noopener noreferrer" 
-  href="sc-ordering-rules.png?width=500"><img  src="sc-ordering-rules.png?width=500"
+  ><img  src="sc-ordering-rules.png?width=500"
         alt width="500"
         /></a></p>
 <p>表格中, 操作 1 和 操作 2 分别表示程序顺序相继的两个操作, X 表示强制顺序, 即全局内存顺序中要保持操作的程序顺序.</p>
@@ -277,7 +277,7 @@ $$</dd>
 <p>一个办法是多任务复用单处理器, 即在单个的处理器上交替执行不同线程的指令, 在两个线程的指令执行之间会发生上下文切换, 任何等待中的内存操作在上下文切换之前都要完成.</p>
 <p>第二个方法允许多个处理器存在, 多个处理器通过一个多路开关 (Switch) 与内存模块相连, 如下图所示, 每个处理器按照程序顺序向开关发送内存操作, 开关以某种算法选择一个处理器, 允许其完成一个内存操作, 然后重复这一操作.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="switch-sc-impl.png?width=300"><img class="img" src="switch-sc-impl.png?width=300"
+  ><img class="img" src="switch-sc-impl.png?width=300"
         alt="switch-sc-impl" width="300"
         /></a></span><span class="caption"><span class="title">SC 模型的开关实现</span></span></span></p>
 <p>现实的 SC 实现可以使用带有缓存的内存系统, 可以使用一些优化策略, 如缓存预取、分支预测、动态调度、单核多线程等. MIPS R10000 实现了 SC 模型.</p>
@@ -369,7 +369,7 @@ FENCE
 <p>第二个要求比较拗口, 实际上表示了写操作原子性的丧失: 一个读操作读到的值可能来自于一个在全局内存顺序上后于它, 但在同一线程先于它发生的写操作 (通过 bypassing), 说的更明白些, 一个线程可以先于其它线程读到它自己的写操作.</p>
 <p>我们用以下表格表示 TSO 模型的操作排序规则:</p>
 <p><a target="_blank" rel="noopener noreferrer" 
-  href="tso-ordering-rules.png?width=600"><img  src="tso-ordering-rules.png?width=600"
+  ><img  src="tso-ordering-rules.png?width=600"
         alt width="600"
         /></a></p>
 <p>表格中用颜色标出了相比 SC 模型有变化的部分. 其中 B 表示 bypassing, 即只有同一个线程对同一地址的操作, 可以通过 bypassing 维持其顺序.</p>
@@ -377,13 +377,13 @@ FENCE
 <p>最直接的 TSO 实现可以通过给 SC 实现加上 FIFO 写入缓冲得到, 事实上多数 TSO 实现正是这样做的. SC 实现中的各种优化策略也可以应用到 TSO 上, 当然需要一些适配, 例如, 如果支持单核多线程, 需要将写入缓冲区在逻辑上划分成每个线程上下文私有的缓冲区.</p>
 <p>下图表示了从 SC 的开关实现扩展而来的 TSO 概念实现.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="switch-tso-impl.png?width=300"><img class="img" src="switch-tso-impl.png?width=300"
+  ><img class="img" src="switch-tso-impl.png?width=300"
         alt width="300"
         /></a></span><span class="caption"><span class="title">TSO 模型的开关实现</span></span></span></p>
 <h4 id="tso-与-sc-模型的比较">TSO 与 SC 模型的比较</h4>
 <p>TSO 执行与 SC 执行可以用下图表示, TSO 实现和 SC 实现具有同样的关系, 即: 任何一个 SC 执行 (实现) 都同时是 TSO 执行 (实现), 因此我们说 SC 比 TSO 模型更严格 (strict).</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="sc-tso-venn.png?width=200"><img class="img" src="sc-tso-venn.png?width=200"
+  ><img class="img" src="sc-tso-venn.png?width=200"
         alt width="200"
         /></a></span></span></p>
 <p>SC 对程序编写者更直观, 但 TSO 与其相近, 大部分习惯用法仍然有效; 对简单处理器来说, TSO 的性能优于 SC, 但使用预测执行等优化措施可以缩小这一差距.</p>
@@ -577,12 +577,12 @@ L2:     r1 <span style="color:#f92672">=</span> x<span style="color:#f92672">;</
 </code></pre></div><p>按照 HBMM 要求, 如果 $L1$ 操作读到了 ready 的值为 <code>true</code>, 则后续的 $L2$ 操作也应该读到了 $S1$ 写入的 1. 推导过程如下: ready 是一个 volatile 变量, 对 ready 的读操作读到的值由同步顺序一致性决定, 如果 $L1$ 读到了 $S2$ 写入的 <code>true</code>, 说明在此次执行的同步顺序上, $L1$ 在 $S2$ 之后, 我们用 $\xrightarrow{so}$ 表示同步顺序, 则有 $S2 \xrightarrow{so} L1$, 用 $\xrightarrow{sw}$ 表示 synchronizes-with 关系, 根据synchronizes-with 规则 2, 有 $S2 \xrightarrow{sw} L1$. 用 $\xrightarrow{po}$ 表示程序顺序, 则有 $S1 \xrightarrow{po} S2$ 和 $L1 \xrightarrow{po} L2$. 由 happens-before 顺序的定义可知, 有 $S1 \xrightarrow{hb} L2$, x 为非 volatile 变量, 根据 happens-before 一致性规则, 可知 $L2$ 读到的值可以是 $S1$ 写入的值. 另外一个隐藏的候选值, 是初始值 0 的写入操作, 我们把它记为 $S0$, 由 synchronizes-with 规则 4, 有 $S0 \xrightarrow{sw} L2$, 进而有 $S0 \xrightarrow{hb} L2$. 但是在 happens-before 顺序上, $S0$ 的写操作被 $S1$ 覆盖了, 所以 $L2$ 读到的值只能是 $S1$ 的写入值.</p>
 <p>我们用图来表示各顺序关系:</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="hb-mm-demo.png?width=600"><img class="img" src="hb-mm-demo.png?width=600"
+  ><img class="img" src="hb-mm-demo.png?width=600"
         alt width="600"
         /></a></span></span></p>
 <p>假设 ready 不是 volatile 变量呢? 根据 happens-before 一致性规则, 如果 $L1$ 读到了 $S2$ 写入的值, 仅仅要求不存在 $L1 \xrightarrow{hb} S2$, 而无法推导出 $S2$ 与 $L1$ 存在顺序关系, 因而各操作间的顺序关系变成了:</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="hb-mm-demo-non-volatile.png?width=600"><img class="img" src="hb-mm-demo-non-volatile.png?width=600"
+  ><img class="img" src="hb-mm-demo-non-volatile.png?width=600"
         alt width="600"
         /></a></span></span></p>
 <p>可见 $S1$ 与 $L2$ 之间不存在 happens-before 关系, $L2$ 应当读到 $S0$ 还是 $S1$ 写入的值, 都是 HBMM 允许的. 从实现角度看, 如果某个实现在执行中交换了 $S1$ 与 $S2$, 是 HBMM 允许的, 可能产生上述结果.</p>
@@ -877,7 +877,7 @@ r7 <span style="color:#f92672">=</span> r6<span style="color:#f92672">.</span><s
 </code></pre></div><p>先说结论: 假设 T2 和 T3 中对 p 和 q 的读操作都读到了 T1 写入的值, 则 r7 一定是 42, r3 和 r5 可能是 0 或 42.</p>
 <p>下图中标示出了各操作间存在的重要顺序关系及确定这种关系的约束条件, 如 mc(a) 表示由约束 a 确定的 $\xrightarrow{mc}$ 顺序.</p>
 <p><span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
-  href="final-field-sementics.png?width=600"><img class="img" src="final-field-sementics.png?width=600"
+  ><img class="img" src="final-field-sementics.png?width=600"
         alt width="600"
         /></a></span></span></p>
 <p>从图中可以看出, 对于 T3 中的读操作来说 r7 = t6.f 来说, 唯一能确定的内存链构成了上述序列, 所以一定能读到 T1 写入的 42. 对于 T2 的读操作 r3 = r2.f, 则没有构成特殊的 happens-before 关系, 所以可能读到 0. 微妙的是 r5 = r4.f 这个读操作, 图中的虚线满足上述规则, 但同时存在另一个不满足规则的内存链关系, 所以也不能保证读到 42. 体现在实现中, 就是编译器可以认为 r4.f 和 r2.f 是对同一个对象的相同 final 字段的引用, 因为 final 字段不可变, 所以可以将第二个读操作替换为 r5 = r3.</p>
