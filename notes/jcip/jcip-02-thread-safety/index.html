@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 02.线程安全&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#问题与解答">问题与解答</a>
+      <ul>
+        <li><a href="#问题-核心是共享可变状态">问题: 核心是共享可变状态</a></li>
+        <li><a href="#工具-使用同步机制协调访问">工具: 使用同步机制协调访问</a></li>
+        <li><a href="#工具---问题">工具 -&gt; 问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#理解线程安全">理解线程安全</a>
+      <ul>
+        <li><a href="#定义-多线程下继续正确">定义: 多线程下继续正确</a></li>
+        <li><a href="#两点要求">两点要求</a></li>
+      </ul>
+    </li>
+    <li><a href="#原子性">原子性</a>
+      <ul>
+        <li><a href="#竞态条件-race-conditions">竞态条件 (Race conditions)</a></li>
+        <li><a href="#原子性-1">原子性</a></li>
+        <li><a href="#复合操作-compound-actions">复合操作 (Compound actions)</a></li>
+        <li><a href="#使用线程安全对象管理状态">使用线程安全对象管理状态</a></li>
+      </ul>
+    </li>
+    <li><a href="#锁">锁</a>
+      <ul>
+        <li><a href="#多变量状态操作的原子性要求">多变量状态操作的原子性要求</a></li>
+        <li><a href="#内置锁-intrinsic-locks">内置锁 (Intrinsic locks)</a></li>
+        <li><a href="#可重入性-reentrancy">可重入性 (Reentrancy)</a></li>
+      </ul>
+    </li>
+    <li><a href="#用锁保护状态">用锁保护状态</a>
+      <ul>
+        <li><a href="#原则">原则</a></li>
+        <li><a href="#实现考虑">实现考虑</a></li>
+      </ul>
+    </li>
+    <li><a href="#活跃性和性能">活跃性和性能</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 02.线程安全</h1><p class="article date">2020-03-30</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#问题与解答">问题与解答</a>
+      <ul>
+        <li><a href="#问题-核心是共享可变状态">问题: 核心是共享可变状态</a></li>
+        <li><a href="#工具-使用同步机制协调访问">工具: 使用同步机制协调访问</a></li>
+        <li><a href="#工具---问题">工具 -&gt; 问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#理解线程安全">理解线程安全</a>
+      <ul>
+        <li><a href="#定义-多线程下继续正确">定义: 多线程下继续正确</a></li>
+        <li><a href="#两点要求">两点要求</a></li>
+      </ul>
+    </li>
+    <li><a href="#原子性">原子性</a>
+      <ul>
+        <li><a href="#竞态条件-race-conditions">竞态条件 (Race conditions)</a></li>
+        <li><a href="#原子性-1">原子性</a></li>
+        <li><a href="#复合操作-compound-actions">复合操作 (Compound actions)</a></li>
+        <li><a href="#使用线程安全对象管理状态">使用线程安全对象管理状态</a></li>
+      </ul>
+    </li>
+    <li><a href="#锁">锁</a>
+      <ul>
+        <li><a href="#多变量状态操作的原子性要求">多变量状态操作的原子性要求</a></li>
+        <li><a href="#内置锁-intrinsic-locks">内置锁 (Intrinsic locks)</a></li>
+        <li><a href="#可重入性-reentrancy">可重入性 (Reentrancy)</a></li>
+      </ul>
+    </li>
+    <li><a href="#用锁保护状态">用锁保护状态</a>
+      <ul>
+        <li><a href="#原则">原则</a></li>
+        <li><a href="#实现考虑">实现考虑</a></li>
+      </ul>
+    </li>
+    <li><a href="#活跃性和性能">活跃性和性能</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="问题与解答">问题与解答</h2>
+<h3 id="问题-核心是共享可变状态">问题: 核心是共享可变状态</h3>
+<p>线程与锁只是通往目的的手段. 编写线程安全代码的核心是: 管理对共享、可变状态的访问.</p>
+<dl>
+<dt>状态 (State)</dt>
+<dd>非正式的说, 对象的状态就是存储在其状态变量 (state variables) 中的数据, 如实例和静态字段, 也包括其引用的对象的字段. <em>对象的状态包含所以能影响其外在可观察行为的数据</em>.</dd>
+<dt>共享 (Shared)</dt>
+<dd>变量可以在多个线程中访问.</dd>
+<dt>可变 (Mutable)</dt>
+<dd>变量的值可以在程序执行中改变.</dd>
+</dl>
+<p>由于多线程对程序的交错 (interleaing)、乱序 (out-of-order) 执行, 可能导致共享可变状态得到非法的状态值, 这是多线程编程要解决的问题.</p>
+<h3 id="工具-使用同步机制协调访问">工具: 使用同步机制协调访问</h3>
+<p>共享的可变状态变量, 如果至少有一个线程可能对其执行写操作, 则需要使用同步机制来协调它们的访问. Java 提供的同步机制 (synchronization) 包括 <em>synchronized 关键字、 volatile 变量、显式锁 (explicit lock)、原子 (atomic) 变量</em>等.<br>
+违反以上原则会导致多线程程序错误, 有三个方法修复这种错误:</p>
+<ol>
+<li>不要在线程间共享状态变量</li>
+<li>使用不可变状态变量</li>
+<li>访问变量时总是使用同步机制.</li>
+</ol>
+<h3 id="工具---问题">工具 -&gt; 问题</h3>
+<h4 id="构造线程安全的类">构造线程安全的类</h4>
+<p>在构造线程安全的类时, 鼓励使用良好的面向对象技术: 封装 (encapsulation)、 不可变性 (immutability)、清晰定义不变式 (invariants).
+先对再快的原则在并发编程中尤其适用.</p>
+<h4 id="构造线程安全的程序">构造线程安全的程序</h4>
+<p>要注意, &ldquo;只包含线程安全的类&rdquo; 与 &ldquo;线程安全&rdquo; 互为非充要条件. 关注点始终是保护状态的访问, 设计中需要权衡决定, 同步机制是实现在类内部还是调用代码中.</p>
+<h2 id="理解线程安全">理解线程安全</h2>
+<h3 id="定义-多线程下继续正确">定义: 多线程下继续正确</h3>
+<dl>
+<dt>正确</dt>
+<dd>对一个类来说, <em>正确</em> 意味这其行为符合其定义(specification). 良好的定义应当包含</dd>
+<dd><ol>
+<li>不变式 (invariants). 用来限制对象的状态, 确定了对象的正确状态空间.</li>
+</ol>
+</dd>
+<dd><ol start="2">
+<li>后置条件 (postconditions). 用来描述操作的作用, 决定了对象状态在正确状态空间中的移动过程.</li>
+</ol>
+</dd>
+<dd>类的正确性要求, 其实例<em>在外部观察者看来, 应当按照后置条件的规定在合法的状态之间移动</em>.</dd>
+<dt>线程安全</dt>
+<dd>线程安全的类, 在多线程访问、且调用方不增加额外同步或其它协调机制的情况下, 仍然表现出正确的行为.</dd>
+<dd>换句话说, 线程安全的类封装了一切必要的同步机制, 因而客户代码不需要再自行提供.</dd>
+</dl>
+<p><em>推论</em>: 无状态 (stateless) 对象永远是线程安全的.</p>
+<h3 id="两点要求">两点要求</h3>
+<p>根据正确性的要求, 一个线程安全的对象的在一个线程 T1 上发生的状态转换, 在另一个线程 T2 看来, 必须是从合法状态 A 转移到合法状态 B, 没有中间状态.<br>
+状态转换可能在两个方面变得复杂:</p>
+<ol>
+<li>状态可能由多个可变变量组合而成, 转换过程包含多个变量值的变化;</li>
+<li>单个变量的变化过程可能包含多个步骤.</li>
+</ol>
+<p>这两个问题还可能同时存在并交织在一起. 直观来看, 这提出了两点要求:</p>
+<ol>
+<li>可见性: 这些变量的变化在 T2 上可以观察到</li>
+<li>原子性: 所有转换 (多个变量值的变化、变化的多个步骤) 在 T2 看来是同时发生、不可分割的</li>
+</ol>
+<h2 id="原子性">原子性</h2>
+<h3 id="竞态条件-race-conditions">竞态条件 (Race conditions)</h3>
+<dl>
+<dt>定义</dt>
+<dd>指计算的正确性依赖于多个线程在运行时执行操作的相对时间和交错关系的情况.</dd>
+</dl>
+<p>典型的造成竞态条件的操作</p>
+<ol>
+<li>Check-and-act: 根据观察到的值决定下一步操作, 但执行操作前值发生的改变. 如不正确的 lazy initialization 实现.</li>
+<li>Read-modify-write: 如自增运算, 在读写之间值发生了变化.</li>
+</ol>
+<h3 id="原子性-1">原子性</h3>
+<dl>
+<dt>定义</dt>
+<dd>操作 A 和操作 B 互为原子的, 是指: 从正在执行操作 A 的线程观察另一个执行 B 的线程, B 要么已经完全执行, 要么完全没有执行 (而不会有执行了一半的情况). 如果一个操作相对于所有对同一状态的操作 (包括其自身) 都是原子的, 则称之为原子操作.</dd>
+</dl>
+<blockquote>
+<p>理解:</p>
+<ol>
+<li>原子性定义的主体是某个操作, 而不是个别的执行, 若 B 相对于 A 是原子的, 则要求<em>在任意一次执行中</em>, 在正在执行 A 的线程上观察不到 B 正在执行, 这要求 (从概念上) A 要么在 B 完成执行之后才开始, 要么在 B 开始之前已执行完, 因此, 对 B 来说, A 也具有原子性, 所以说它们互为原子.</li>
+<li>定义原子操作的基础是 &ldquo;对同一状态&rdquo;, 对不同对象的状态的操作之间谈论原子性是没有意义的, 但是同一状态可以包含多个变量.</li>
+<li>定义原子操作的标准是 &ldquo;观察&rdquo;, 原子性是从另一个线程观察到的操作属性.</li>
+</ol>
+</blockquote>
+<h3 id="复合操作-compound-actions">复合操作 (Compound actions)</h3>
+<p>像 check-and-act、read-modify-write 这样必须原子执行才能保证线程安全的操作序列, 统称为复合操作.</p>
+<h3 id="使用线程安全对象管理状态">使用线程安全对象管理状态</h3>
+<ol>
+<li>使用已经存在的线程安全对象来管理状态 (如用 AtomicLong 对象来管理计数状态), 可以简化对可能状态及状态转换的推导, 易于维护线程安全特性. 特别的, 如果对象仅有一个状态变量, 那么使用线程安全对象维护这个变量, 即可保证对象的线程安全.</li>
+<li>但是原子性的要求也揭示了, 若对象拥有多个状态变量, 仅仅使用线程安全的对象分别维护各状态变量是不够的.</li>
+</ol>
+<h2 id="锁">锁</h2>
+<h3 id="多变量状态操作的原子性要求">多变量状态操作的原子性要求</h3>
+<dl>
+<dt>相关变量</dt>
+<dd>当对象的状态由多个变量组成时, 若多个变量都参与了类的不变式的定义, 则这些变量是非独立的. 一个变量的值决定了其它变量的可能值.</dd>
+</dl>
+<p>相关变量的更新必须在同一个原子操作中进行, 以保证状态是合法的.</p>
+<h3 id="内置锁-intrinsic-locks">内置锁 (Intrinsic locks)</h3>
+<ul>
+<li>synchronized 块: Java 提供的一种内置的同步机制, 可用以实现操作的原子性 (和可见性), 一个 synchronized 块包含两部分
+<ul>
+<li>锁: 一个对象的引用</li>
+<li>受此锁保护的代码块</li>
+</ul>
+</li>
+<li>每个 Java 对象都可以作为锁, 这种内建的锁称为内置锁或监控锁 (monitor locks).</li>
+<li>synchronized 方法: 一种 synchronized 块的快捷写法
+<ul>
+<li>代码块: 整个方法体</li>
+<li>锁对象
+<ul>
+<li>实例方法: 调用方法的对象</li>
+<li>静态方法: 类的 Class 对象</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>进入 synchronized 块时, 执行线程自动获取 (aquire) 保护此代码块的内置锁, 离开时 (通过正常执行完成或抛出异常) 自动释放 (release) 内置锁.</li>
+<li>内置锁作为互斥量 (mutex) 使用, 同一时间最多有一个线程持有同一内置锁, 因此受同一内置锁保护的 synchronized 块不可能同时执行, 互相具有原子性.</li>
+</ul>
+<h3 id="可重入性-reentrancy">可重入性 (Reentrancy)</h3>
+<dl>
+<dt>可重入</dt>
+<dd>为每个线程获取锁, 而非为每次触发获取锁.</dd>
+</dl>
+<ul>
+<li>换言之, 一个线程可以成功获取其已经持有的某个锁.</li>
+<li>作为对比, pthread 的默认锁操作不是可重入的</li>
+<li>可重入锁可以通过计数实现, 每个锁有一个关联的线程和计数, 当计数为 0, 表示锁未被任何线程持有, 当某个线程获取到此锁时, 将其关联到锁并修改计数为 1, 每次获取锁成功则计数加 1, 释放则计数减 1, 计数减为 0 时, 锁回到未被持有状态.</li>
+<li>锁的可重入性带给于 OOP 的一个便利是, 若子类覆盖的某 synchronized 方法调用了父类实现, 不会造成死锁.</li>
+</ul>
+<h2 id="用锁保护状态">用锁保护状态</h2>
+<p>对每一个可能在多于一个线程中访问的可变状态对象, <em>所有</em>对此变量的访问都要在持有同一个锁的状态下进行. 这种情况下就说此变量收到这个锁的保护 (guarded by that lock). <em>注意是所有操作, 同步不能只针对写操作使用</em></p>
+<h3 id="原则">原则</h3>
+<ul>
+<li>每个共享的可变变量, 应当受到一个锁 (而不是多个) 保护, 并应清晰的向维护者说明是哪个锁 (通过文档、注释或良好的代码封装等手段).</li>
+<li>若类的某个不变式涉及到多于一个的变量, 则所有参与到此不变式定义的变量必须收到同一个锁的保护.</li>
+</ul>
+<h3 id="实现考虑">实现考虑</h3>
+<ul>
+<li>以上原则留给编程者很大自由, 去自行设计锁协议 (lock protocols) 或同步策略 (synchronization policies)</li>
+<li>一个常见的用法是, 将所有可变状态封装为一个对象, 并用起内置锁保护所有对可变状态的访问. 这个方法并无特殊之处, 编译器和运行时也不会强制要求使用这个模式. 并且新增代码如果忘记使用同步可能导致锁协议的失效.</li>
+<li>为何不干脆把所有方法上锁?
+<ul>
+<li>并不能保证连续调用多个方法的原子性, 而有时这中原子性是必要的.</li>
+<li>会导致性能和活跃性问题</li>
+</ul>
+</li>
+</ul>
+<h2 id="活跃性和性能">活跃性和性能</h2>
+<ul>
+<li>不当的锁使用导致差并发性(poor concurrency): 可以并发执行的操作不受限于资源, 而受限于程序的结构本身.</li>
+<li>优化持锁范围: 大块代码持锁执行导致的并发性降低, 在保证必要的操作原子性前提下, 可以通过缩小持锁代码块的范围来优化. 但是, 获取锁会带来一定的性能支出, 持锁的粒度过细也会影响性能 (暂不考虑编译器优化), 并且可能牺牲程序的简单.
+确定适当的持锁范围要权衡安全性、简单性和性能, 安全性必须保证, 而在简单与性能之间要谨慎取舍. 在设计同步策略时, 要避免轻率的牺牲简单性去换取性能.</li>
+<li>避免持锁执行长时间的计算或其它有不能快速完成风险的操作 (如网络和控制台 I/O), 造成影响程序的活跃性和性能.</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-04-composing-objects/"><span class="li">&larr;</span>[JCIP] 04.组合对象</a></p><p><a class="link" href="/notes/jcip/jcip-00-01-intro/"><span class="li">&rarr;</span>[JCIP] 00~01.前言和导论</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

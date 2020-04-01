@@ -7,10 +7,70 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Mon, 16 Mar 2020 08:28:56 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 01 Apr 2020 10:09:03 +0800</lastBuildDate>
     
         <atom:link href="/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 07.取消和关闭</title>
+      <link>/notes/jcip/jcip-07-cancellation-n-shutdown/</link>
+      <pubDate>Wed, 01 Apr 2020 10:09:03 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-07-cancellation-n-shutdown/</guid>
+      <description>任务取消 如果一各活动允许外部代码在其正常执行完成之前将其移动到完成状态, 就说这个活动是可取消的 (cancellable). 取消活动的动机可能有: 用户操作取消 时间受限活</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 06.任务执行</title>
+      <link>/notes/jcip/jcip-06-task-execution/</link>
+      <pubDate>Tue, 31 Mar 2020 22:05:14 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-06-task-execution/</guid>
+      <description>任务 (Task) 是抽象、离散的工作单元. 将并发程序划分为任务的好处包括: 简化程序结构 提供自然的事务边界, 利于错误恢复 提供自然的并行工作结构边界, 利于提</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 05.构造块</title>
+      <link>/notes/jcip/jcip-05-building-blocks/</link>
+      <pubDate>Tue, 31 Mar 2020 10:09:39 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-05-building-blocks/</guid>
+      <description>同步集合类 最初 JDK 中包含的: Vector、 Hashtable JDK 1.2 增加的: 通过 Collections.synchronizedXXX 工厂方法创建的对象 同步策略: 封装所有的状态, 并同步所有的公共方法来保证同一时间只</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 04.组合对象</title>
+      <link>/notes/jcip/jcip-04-composing-objects/</link>
+      <pubDate>Tue, 31 Mar 2020 00:35:34 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-04-composing-objects/</guid>
+      <description>设计线程安全的类 虽然可以完全不使用线程安全的类构造线程安全的程序, 但良好的封装是设计线程安全程序的重要方法. 设计线程安全的类一般分三步: 识别</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 02.线程安全</title>
+      <link>/notes/jcip/jcip-02-thread-safety/</link>
+      <pubDate>Mon, 30 Mar 2020 14:07:36 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-02-thread-safety/</guid>
+      <description>问题与解答 问题: 核心是共享可变状态 线程与锁只是通往目的的手段. 编写线程安全代码的核心是: 管理对共享、可变状态的访问. 状态 (State) 非正式的说, 对象的</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 00~01.前言和导论</title>
+      <link>/notes/jcip/jcip-00-01-intro/</link>
+      <pubDate>Mon, 30 Mar 2020 13:53:23 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-00-01-intro/</guid>
+      <description>总体思路 机制和规则 机制 (mechanisms): Java 语言为支持并发编程特性提供了各种底层机制, 如同步、条件等; 规则 (policies): Java 编程人员需要的应用程序级别的协议或规则. 底层机制</description>
+      
+    </item>
     
     <item>
       <title>Java 内存模型入门</title>

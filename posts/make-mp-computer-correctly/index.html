@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>[译] 如何制造正确执行多进程程序的多处理器计算机&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.73e0e5ed35217e85e34c8e28af99ed860e1c4f3a995a8690676313722852a69f0208aac60d5782f8cd1cf0ed6601837e.css" integrity="sha384-c&#43;Dl7TUhfoXjTI4or5nthg4cTzqZWoaQZ2MTcihSpp8CCKrGDVeC&#43;M0c8O1mAYN&#43;"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<meta name="supported-color-schemes" content="light dark"><title>[译] 如何制造正确执行多进程程序的多处理器计算机&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
 <script>
     window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
 </script>
@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
-        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
     <h1 class="article title">[译] 如何制造正确执行多进程程序的多处理器计算机</h1><p class="article date">2020-03-14</p></section><article class="article markdown-body"><blockquote>
 <p><strong>注：</strong> 本文译自 Leslie Lamport 发表于 1979 年 9 月的 <em>IEEE Transactions on Computers</em> 上的文章 <em>How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs</em>, 其重要意义在于正式定义了顺序一致性. Lamport 于 2013 年获图灵奖, 其获奖成就之一就是定义了这一“内存一致性模型的黄金标准”. 受知识和语言水平所限, 翻译中存在很多生硬或不准确之处, 仅供参考. 原文链接：<a href="http://lamport.azurewebsites.net/pubs/pubs.html#multi">http://lamport.azurewebsites.net/pubs/pubs.html#multi</a></p>
 </blockquote>

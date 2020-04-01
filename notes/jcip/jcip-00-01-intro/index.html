@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 00~01.前言和导论&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#总体思路">总体思路</a>
+      <ul>
+        <li><a href="#机制和规则">机制和规则</a></li>
+        <li><a href="#理想与实践">理想与实践</a></li>
+      </ul>
+    </li>
+    <li><a href="#线程和线程安全">线程和线程安全</a>
+      <ul>
+        <li><a href="#进程和线程产生的动机">进程和线程产生的动机</a></li>
+        <li><a href="#关于线程">关于线程</a></li>
+        <li><a href="#线程带来的好处">线程带来的好处</a></li>
+        <li><a href="#线程带来的风险">线程带来的风险</a></li>
+        <li><a href="#无法回避的线程安全">无法回避的线程安全</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 00~01.前言和导论</h1><p class="article date">2020-03-30</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#总体思路">总体思路</a>
+      <ul>
+        <li><a href="#机制和规则">机制和规则</a></li>
+        <li><a href="#理想与实践">理想与实践</a></li>
+      </ul>
+    </li>
+    <li><a href="#线程和线程安全">线程和线程安全</a>
+      <ul>
+        <li><a href="#进程和线程产生的动机">进程和线程产生的动机</a></li>
+        <li><a href="#关于线程">关于线程</a></li>
+        <li><a href="#线程带来的好处">线程带来的好处</a></li>
+        <li><a href="#线程带来的风险">线程带来的风险</a></li>
+        <li><a href="#无法回避的线程安全">无法回避的线程安全</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="总体思路">总体思路</h2>
+<h3 id="机制和规则">机制和规则</h3>
+<ul>
+<li><em>机制 (mechanisms)</em>: Java 语言为支持并发编程特性提供了各种底层机制, 如同步、条件等;</li>
+<li><em>规则 (policies)</em>: Java 编程人员需要的应用程序级别的协议或规则.</li>
+</ul>
+<p>底层机制需要协调一贯的使用以实现上层规则, 才能减少并发程序的错误.</p>
+<h3 id="理想与实践">理想与实践</h3>
+<ul>
+<li>理想: JMM 准确定义了多线程程序的合法行为, 根据 JMM 的规则即可编写正确高效的并发程序.</li>
+<li>实践: 遵守一组经过简化的规则 (rules), 这些规则摒除了一些 JMM 允许但过于复杂的用法, 帮助开发者编写正确、易维护的并发程序.</li>
+</ul>
+<h2 id="线程和线程安全">线程和线程安全</h2>
+<h3 id="进程和线程产生的动机">进程和线程产生的动机</h3>
+<ol>
+<li><strong>资源利用率</strong>: 减少等待输入输出时的系统闲置</li>
+<li><strong>公平</strong>: 实现更细粒度的时间划分, 在多用户或程序之间公平分配时间</li>
+<li><strong>便利</strong>: 分解任务, 便于编写程序.</li>
+</ol>
+<h3 id="关于线程">关于线程</h3>
+<ol>
+<li>线程是运行中进程的一个独立的控制流 (Thread of control -&gt; Thread).</li>
+<li>同一进程的多个线程共享进程级别的资源, 如内存、文件描述符等, 但每个线程有其独有的 PC、栈和本地变量等.</li>
+<li>线程有时称为轻量级进程 (lightweight process), <em>多数现代操作系统将线程作为最小调度单位</em> (这意味者一个线程最多在一个处理器上运行).</li>
+</ol>
+<h3 id="线程带来的好处">线程带来的好处</h3>
+<ol>
+<li>充分利用多处理器的性能, 即使在单处理器上, 也能减少阻塞提高处理器利用率.</li>
+<li>简化建模和控制流实现, 对于框架 (framework) 程序, 这意味着更加易于学习.</li>
+<li>简化异步事件的处理, 例如可以避免使用复杂易出错的异步 IO 操作.</li>
+<li>保证图形界面的正常响应.</li>
+</ol>
+<h3 id="线程带来的风险">线程带来的风险</h3>
+<ol>
+<li><strong>安全风险</strong>. 安全性 (Safety) 要求<em>坏的事情不发生</em>. 如应通过同步约束避免 <em>竞态条件</em> (race condition) 带来的错误.</li>
+<li><strong>活跃性风险</strong>. 活跃性 (Liveliness) 要求<em>好的事情最终会发生</em>.</li>
+<li><strong>性能风险</strong>. 性能 (Performance) 要求<em>好的事情尽快发生</em>. 多线程在提高资源利用率的同时也会引入上下文切换、线程间同步等负担.</li>
+</ol>
+<p>多线程风险的两个特点</p>
+<ol>
+<li>相比于单线程程序, 有一些额外的原因会造成以上风险;</li>
+<li>问题一般和执行时序有关, 往往在开发和测试时不能暴露出来.</li>
+</ol>
+<h3 id="无法回避的线程安全">无法回避的线程安全</h3>
+<h4 id="线程无处不在">线程无处不在</h4>
+<p>即使应用程序自身不启动线程, JVM、框架中的线程也无处不在, 如:</p>
+<ol>
+<li>JVM 启动的 housekeeping 线程;</li>
+<li>Timer 在线程中执行 TimerTask;</li>
+<li>Serverlets 和 JSPs 使用线程处理用户请求;</li>
+<li>RMI 在线程中执行方法调用;</li>
+<li>Swing 和 AWT 通过创建后台线程保持界面响应.</li>
+</ol>
+<h4 id="线程安全要求具有延伸性-contagious">线程安全要求具有延伸性 (contagious)</h4>
+<ol>
+<li>框架启动的多个线程间可能共享状态: 框架代码调用的组件要考虑线程安全问题;</li>
+<li>框架部分和其它代码也可能共享状态: 凡是访问到框架线程会访问的组件状态的代码也要考虑线程安全问题.</li>
+</ol>
+<p><em>实践原则:</em> 处理框架回调引起的线程安全问题, 最简单的办法是将回调共享的状态封装在线程安全的对象中. UI 如 Swing 也可能采取限制状态只能在一个线程访问的途径达到线程安全.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-02-thread-safety/"><span class="li">&larr;</span>[JCIP] 02.线程安全</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

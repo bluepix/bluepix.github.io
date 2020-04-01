@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 07.取消和关闭&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#任务取消">任务取消</a>
+      <ul>
+        <li><a href="#中断">中断</a></li>
+        <li><a href="#中断策略">中断策略</a></li>
+        <li><a href="#对中断的响应">对中断的响应</a></li>
+        <li><a href="#使用-future-取消超时任务">使用 Future 取消超时任务</a></li>
+        <li><a href="#处理不可中断阻塞">处理不可中断阻塞</a></li>
+      </ul>
+    </li>
+    <li><a href="#停止基于线程的服务">停止基于线程的服务</a>
+      <ul>
+        <li><a href="#executorservice-的停止">ExecutorService 的停止</a></li>
+        <li><a href="#毒药模式">毒药模式</a></li>
+        <li><a href="#shutdownnow-方法的局限">shutdownNow 方法的局限</a></li>
+      </ul>
+    </li>
+    <li><a href="#处理异常的线程终止">处理异常的线程终止</a>
+      <ul>
+        <li><a href="#uncaughtexceptionhandler">UncaughtExceptionHandler</a></li>
+      </ul>
+    </li>
+    <li><a href="#jvm-的关闭">JVM 的关闭</a>
+      <ul>
+        <li><a href="#关闭钩子线程">关闭钩子线程</a></li>
+        <li><a href="#守护线程">守护线程</a></li>
+        <li><a href="#finalizers">Finalizers</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 07.取消和关闭</h1><p class="article date">2020-04-01</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#任务取消">任务取消</a>
+      <ul>
+        <li><a href="#中断">中断</a></li>
+        <li><a href="#中断策略">中断策略</a></li>
+        <li><a href="#对中断的响应">对中断的响应</a></li>
+        <li><a href="#使用-future-取消超时任务">使用 Future 取消超时任务</a></li>
+        <li><a href="#处理不可中断阻塞">处理不可中断阻塞</a></li>
+      </ul>
+    </li>
+    <li><a href="#停止基于线程的服务">停止基于线程的服务</a>
+      <ul>
+        <li><a href="#executorservice-的停止">ExecutorService 的停止</a></li>
+        <li><a href="#毒药模式">毒药模式</a></li>
+        <li><a href="#shutdownnow-方法的局限">shutdownNow 方法的局限</a></li>
+      </ul>
+    </li>
+    <li><a href="#处理异常的线程终止">处理异常的线程终止</a>
+      <ul>
+        <li><a href="#uncaughtexceptionhandler">UncaughtExceptionHandler</a></li>
+      </ul>
+    </li>
+    <li><a href="#jvm-的关闭">JVM 的关闭</a>
+      <ul>
+        <li><a href="#关闭钩子线程">关闭钩子线程</a></li>
+        <li><a href="#守护线程">守护线程</a></li>
+        <li><a href="#finalizers">Finalizers</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="任务取消">任务取消</h2>
+<p>如果一各活动允许外部代码在其正常执行完成之前将其移动到完成状态, 就说这个活动是可取消的 (cancellable). 取消活动的动机可能有:</p>
+<ul>
+<li>用户操作取消</li>
+<li>时间受限活动, 超时后取消任务</li>
+<li>应用事件. 如分解任务求解, 一个任务求解完成后可以取消其它任务.</li>
+<li>错误.</li>
+<li>关闭 (shutdown). 当一个应用或服务关闭时, 其执行的任务可能需要取消.</li>
+</ul>
+<p>Java 没有提供强制终止线程取消任务的机制, 只能采用协作式的方法取消. 可以取消的任务要有一个取消策略, 说明外部代码如何取消任务, 任务何时检查取消请求状态及如何响应取消.</p>
+<h3 id="中断">中断</h3>
+<p>某些的阻塞方法支持中断 (interruption), 中断是通知其它线程在 &ldquo;方便&rdquo; 的时候停止正在进行的工作去执行一些其它代码. 虽然 API 和语言的定义中完全没有规定中断是和任何特定的取消语义绑定的, 但实践中, 取消任务是中断机制唯一适合的应用, 其它场景的应用都被证明是脆弱难以维持的.</p>
+<p>每个线程有一个 boolean 类型的 interrupted 状态, Thread 类提供了对这个变量的操作和检测方法 (命名比较失败):</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void interrupt()</code></td>
+<td>中断请求, 设置 interrupted 状态</td>
+</tr>
+<tr>
+<td><code>boolean isInterrupted()</code></td>
+<td>检查 interrupted 状态的值</td>
+</tr>
+<tr>
+<td><code>static boolean interrupted()</code></td>
+<td><em>清楚 interrupted 状态</em>, 并返回之前的值</td>
+</tr>
+</tbody>
+</table>
+<p>阻塞状态的线程: 类似 <code>Thread.sleep</code> 和 <code>Object.wait</code> 这些阻塞方法试图尽快检测出线程收到中断并返回, JVM 不保证能多快检测到, 但实践中一般都比较快.<br>
+非阻塞状态的线程: interrupted 状态会设置为 <code>true</code>, 但需要要取消的活动检测这个状态, 中断才能产生作用.</p>
+<p>可以认为: 中断并不能真正的中断某个线程, 只是请求线程在下一个方便的点 (称为取消点 cancellation points) 中断它自己. 有些方法, 如 <code>wait</code>、<code>sleep</code>、<code>join</code> 重视中断请求, 在收到中断请求或执行时检测到已设置的中断状态时, 会抛出异常. 良好的方法可以完全忽略这些请求, 但保留其状态. 不好的方法忽略这些请求并且清除状态 (吞下了中断请求), 导致其它方法也无法检测到.<br>
+使用静态的 <code>interrupted</code> 方法要小心, 因为它会清除调用线程的 interrupted 状态, 如果调用此方法返回了 true, 多数情况下需要做出反应, 或者抛出中断异常, 或者调用 <code>interrupt</code> 方法恢复中断状态.</p>
+<p><em>通常情况下, 中断是实现取消的最合理方法.</em></p>
+<h3 id="中断策略">中断策略</h3>
+<p>一个任务的中断策略描述了它是否响应中断, 如何响应, 多块响应, 对中断而言哪些工作是原子的 (不会被中断打断).</p>
+<p>最合理的中断策略是某种线程或服务级别的取消形式: 尽快退出, 做必要的清理, 如有必要将线程的退出通知一些对象.</p>
+<p>任务检测到中断状态时, 不必立即处理, 而是可以记录中断事件, 推迟到适当的时候结束当前执行, 抛出中断异常或用其他方式指示中断. 这样做可以避免正在更新中的数据结构损坏.</p>
+<p>有必要区分<em>线程</em>和<em>任务</em>对中断的处理. 中断线程池中的一个工作线程可以同时意味着 &ldquo;取消当前任务&rdquo; 和 &ldquo;关闭工作线程&rdquo;.<br>
+任务不在它们所拥有的线程中执行, 它们从服务 (如线程池) 中 “借” 一个线程. 代码在不属于它们的线程中执行要当心保留中断状态, 即使它们本身会对中断做出响应, 也要保证线程的所有者观察到中断状态. 除非明确已知, 任务不应当对执行它的线程的中断策略做任何假设, 在处理完成后应恢复中断状态.<br>
+线程也不应假设任务对中断的处理, 应当只允许线程的所有者中断线程, 所有者可以将对线程中断策略的了解封装到某种关闭机制中. 在不知道线程中断策略的情况下不应中断线程.</p>
+<h3 id="对中断的响应">对中断的响应</h3>
+<p>调用可中断的阻塞方法时, 有两种使用的策略处理中断异常:</p>
+<ul>
+<li>在执行必要操作后继续向上抛出, 使得当前方法也是一个可中断的阻塞方法.</li>
+<li>恢复中断状态, 使上级调用代码可以检测到.</li>
+</ul>
+<p>只有实现线程的中断策略的代码可以采取第三种处理: 静默. 通用的任务和库代码通常不知道会在什么线程中执行, 因此不应静默处理.</p>
+<p>不支持取消但调用可中断阻塞方法的活动, 可以在循环中调用, 在检测到中断时重试, 并记录中断状态, 在最后返回之前再恢复中断状态. 即使不调用阻塞方法, 也可以通过轮询中断状态响应中断请求.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> Task <span style="color:#a6e22e">getNextTask</span><span style="color:#f92672">(</span>BlockingQueue<span style="color:#f92672">&lt;</span>Task<span style="color:#f92672">&gt;</span> queue<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">boolean</span> interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+                <span style="color:#66d9ef">return</span> queue<span style="color:#f92672">.</span><span style="color:#a6e22e">take</span><span style="color:#f92672">();</span>
+            <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>InterruptedException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+                interrupted <span style="color:#f92672">=</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">;</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>interrupted<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            Thread<span style="color:#f92672">.</span><span style="color:#a6e22e">currentThread</span><span style="color:#f92672">().</span><span style="color:#a6e22e">interrupt</span><span style="color:#f92672">();</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>取消活动可以涉及中断状态以外的其它状态, 可以使用中断引起线程的注意, 在其他状态中提供额外信息进一步控制线程的处理.</p>
+<h3 id="使用-future-取消超时任务">使用 Future 取消超时任务</h3>
+<p>对于限时执行完成的任务, 一个好的模式是使用 Future 处理超时后的取消:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">timedRun</span><span style="color:#f92672">(</span>Runnable r<span style="color:#f92672">,</span> <span style="color:#66d9ef">long</span> timeout<span style="color:#f92672">,</span> TimeUnit unit<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
+    Future<span style="color:#f92672">&lt;?&gt;</span> task <span style="color:#f92672">=</span> taskExec<span style="color:#f92672">.</span><span style="color:#a6e22e">submit</span><span style="color:#f92672">(</span>r<span style="color:#f92672">);</span>
+    <span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+        task<span style="color:#f92672">.</span><span style="color:#a6e22e">get</span><span style="color:#f92672">(</span>timeout<span style="color:#f92672">,</span> unit<span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">(</span>TimeoutException e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">//  在 finally 中取消
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span> <span style="color:#f92672">{</span>ExecutionException e<span style="color:#f92672">}</span> <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// 重新抛出
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">throw</span> launderThrowable<span style="color:#f92672">(</span>e<span style="color:#f92672">.</span><span style="color:#a6e22e">getCause</span><span style="color:#f92672">())</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">finally</span> <span style="color:#f92672">{</span>
+        task<span style="color:#f92672">.</span><span style="color:#a6e22e">cancel</span><span style="color:#f92672">(</span><span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>注意:
+<code>Future.cancel</code> 方法的 mayInterruptIfRunning 参数, 如果为 true 且任务在某个线程上执行, 则中断此线程, 若为 false, 则取消操作表示, 如果任务尚未开始就不要再执行, 用于那些设计为不支持中断的任务.<br>
+根据前面的规则, 在不知道线程中断策略的的情况下不应该中断线程, 对于标准的线程池实现, mayInterruptIfRunning 参数可以传递 true. 因为不知道线程中运行什么任务, 也不应当直接中断线程池的工作线程, 只能通过任务的 <code>cacel</code> 方法执行中断.</p>
+<h3 id="处理不可中断阻塞">处理不可中断阻塞</h3>
+<ul>
+<li>java.io 中的同步 socket I/O. Socket 读写时, InputStream 的 <code>read</code> 方法和 OutputStream 的 <code>write</code> 方法都是阻塞且不支持中断的, 关闭 socket 可以使这些方法抛出 SocketException.</li>
+<li>java.nio 中的同步 I/O. 中断一个在 InterruptibleChannel 对象上的线程会导致抛出 ClosedByInterruptExecption 并关闭 channel (同时导致其它所有阻塞在此 channel 的线程抛出 ClosedByInterruptExecption). 关闭一个 InterruptibleChannel 导致阻塞在 channel 操作上的线程抛出 AsynchronousCloseException. 多数标准 Channel 实现了 InterruptibleChannel.</li>
+<li>使用 Selector 的一步 I/O. 如果线程阻塞在 <code>Selector.select</code> 方法, 调用 <code>close</code> 或 <code>wakeup</code> 可以使其立即返回.</li>
+<li>锁获取. 如果是内置锁, 没有办法. 外置的 Lock 类提供了 <code>lockInterruptibly</code> 方法.</li>
+</ul>
+<p>自定义的取消方法可以封装在自定义的 RunnableFuture 的 <code>cancel</code> 方法中, 在创建线程池时可以覆盖 newTaskFor 方法返回自定义的 RunnableFuture 类实例. (RunnableFuture 实现了 Runnable 和 Future, FutureTaks 实现了 RunnableFuture).</p>
+<h2 id="停止基于线程的服务">停止基于线程的服务</h2>
+<p>Thread API 没有规定线程由某个对象拥有, 但是这样考虑是有意义的, 一般线程的所有者就是创建它的对象, 如线程池中的工作线程所有者就是线程池本身. 基于线程的服务拥有它所创建的线程. 所有性不传递, 所以可以说, 应用拥有服务, 服务拥有线程. 良好的封装性要求线程应该只允许其所有者对其执行中断、修改属性等操作, 应用不能直接操作线程.<br>
+如果服务的存在周期比创建它的方法长, 服务应当提供生命周期方法 (lifecycle methods) 以便程序退出是可以优雅的关闭线程. 如 ExecutorService 提供了 <code>shutdown</code> 和 <code>shutdownNow</code> 方法.<br>
+基于生产者-消费者模式的服务, 在停止时要把停止生产者和消费者都停止.</p>
+<h3 id="executorservice-的停止">ExecutorService 的停止</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>shutdown</code></td>
+<td>优雅的关闭, 不允许新任务提交, 但等待所有已提交任务完成, 可能更慢, 但更安全</td>
+</tr>
+<tr>
+<td><code>shutdownNow</code></td>
+<td>强制关闭, 不允许新任务提交, 尝试取消正在执行的任务, 返回未开始的任务列表, 可能更快, 但风向更高</td>
+</tr>
+</tbody>
+</table>
+<p>关闭方法不阻塞等待, 等待关闭应调用 <code>awaitTermination</code> 方法.</p>
+<h3 id="毒药模式">毒药模式</h3>
+<p>毒药 (Poison pills) 是另一种关闭基于生产者-消费者模式的服务的方法: 向队列中放置一个可以识别表示 “停止” 请求的对象 (毒药). 生产者在放置毒药后不应再提交任务.<br>
+毒药模式</p>
+<ul>
+<li>要求生产者和消费者的数量已知. 对于多个生产者或消费者的情况可以通过计数实现.</li>
+<li>仅适用于 unbound 队列.</li>
+</ul>
+<h3 id="shutdownnow-方法的局限">shutdownNow 方法的局限</h3>
+<p><code>shutdown</code> 方法会允许所有已经提交的任务执行完成, <code>shutdownNow</code> 方法可以返回所有尚未开始执行的任务, 并且取消正在执行的任务. 但是没有一个方法可以允许已经开始的任务执行完成, 并返回未开始的任务列表. 要实现这个需求, 需要自行记录已经开始但被取消的任务, 例如为提交的任务封装检查取消并记录的机制.</p>
+<h2 id="处理异常的线程终止">处理异常的线程终止</h2>
+<p>RuntimeException 是造成线程意外退出的首要原因. 特别是提供执行服务的类, 其创建的线程上运行的是客户端代码, 这时候有必要捕获这些代码的异常, 加以必要的处理. 这是少数建议捕获 RuntimeException 的原因之一.</p>
+<h3 id="uncaughtexceptionhandler">UncaughtExceptionHandler</h3>
+<p>除了 try-catch 线程的 RuntimeException, 还可以为线程设置 UncaughtExceptionHandler, 两个可配合使用. 应当只允许线程的所有者为其设置 UncaughtExceptionHandler.
+长期运行的程序中, 应当为所有线程设置 UncaughtExceptionHandler, 至少打印出异常日志.
+注意: <code>execute</code> 方法提交的任务抛出的未捕获异常, 线程的 UncaughtExceptionHandler 可以收到, 但通过 <code>submit</code> 方法提交的任务, 所有异常都会包裹在 <code>get</code> 的异常中抛出.</p>
+<h2 id="jvm-的关闭">JVM 的关闭</h2>
+<p>JVM 可以有序关闭: 所有 &ldquo;一般&rdquo; (非 daemon) 线程终止、调用了 <code>System.exit</code> 或通过其它平台相关的方式 (如发送 SIGINT 信号或点击了 Ctrl + C). JVM 也可能强制关闭, 如调用了 <code>Runtime.halt</code>, 进程被杀掉 (比如发送了 SIGKILL 信号).</p>
+<h3 id="关闭钩子线程">关闭钩子线程</h3>
+<p>可以通过 <code>Runtime.addShudownHook</code> 为JVM 注册关闭钩子 (shutdown hook) 线程.<br>
+在有序关闭中, JVM 先启动所有注册的关闭钩子线程, JVM 不保证这些线程的启动顺序. 如果此时仍有应用线程没有终止, 它们于钩子线程并发执行. 当所有钩子线程结束后, JVM 根据是否设置了 runFinalizerOnExit 决定是否执行 finalizers, 然后停止 (halt). JVM 不会试图停止关闭时仍在运行的线程, 当 JVM 最终停止时, 这种线程都被强制终止. 如果关闭钩子和 finalizers 没有完成, JVM 的有序关闭被挂起, JVM 只能强制关闭.<br>
+在强制关闭中, JVM 直接停止, 不会启动关闭钩子线程.<br>
+关闭钩子线程并发执行, 因此访问共享数据必须使用同步, 且应小心放置死锁等问题. 钩子中不应对应用的状态做任何假设. 钩子线程应当尽快结束.<br>
+关闭钩子线程可以用来执行一些清理操作.<br>
+为了避免并发执行的关闭钩子线程直接的依赖关系导致的问题, 一个方法是所有服务共用一个钩子, 在其中按一定顺序执行一系列清理.</p>
+<h3 id="守护线程">守护线程</h3>
+<p>线程分为两种类型: 一般 (normal) 线程和守护 (daemon) 线程.<br>
+当 JVM 启动时, 其所创建的线程 (如 GC 线程和其它 housekeeping 线程), 除了主线程, 都是守护线程, 新创建的线程与创建它的线程类型相同. 因此所有主线程创建的线程默认都是一般线程.<br>
+一般线程和守护线程的唯一区别体现在它们退出时的处理. 当线程退出时, JVM 检查所有正在运行的线程, 如果只剩下守护线程, JVM 就开始有序关闭. 当 JVM 停止时, 所有的守护线程都被放弃: finally 块不会执行, 栈不会回退, JVM 直接退出.<br>
+因此, 守护线程必须谨慎使用, 在其中执行 I/O 尤其危险. 一般来说守护线程仅适用于 housekeeping 操作, 例如定期清理过期内存缓存项.</p>
+<h3 id="finalizers">Finalizers</h3>
+<p>JVM 对何时甚至是否调用 <code>finalize</code> 都不提供保证, 大多数情况下, finally 块和显式的关闭操作都能更好的处理资源释放 (只有一个例外: 需要处理 native 方法中获取的资源). 因此, 应避免使用 finalizers.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-06-task-execution/"><span class="li">&rarr;</span>[JCIP] 06.任务执行</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

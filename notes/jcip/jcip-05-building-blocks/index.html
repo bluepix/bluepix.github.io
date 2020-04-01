@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 05.构造块&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#同步集合类">同步集合类</a>
+      <ul>
+        <li><a href="#同步集合类的问题">同步集合类的问题</a></li>
+        <li><a href="#遍历与并发修改异常-concurentmodificationexception">遍历与并发修改异常 (ConcurentModificationException)</a></li>
+        <li><a href="#隐藏的遍历">隐藏的遍历</a></li>
+      </ul>
+    </li>
+    <li><a href="#并发集合类">并发集合类</a>
+      <ul>
+        <li><a href="#concurrenthashmap">ConcurrentHashMap</a></li>
+        <li><a href="#copyonwritearraylist">CopyOnWriteArrayList</a></li>
+      </ul>
+    </li>
+    <li><a href="#阻塞队列和生产者-消费者模式">阻塞队列和生产者-消费者模式</a>
+      <ul>
+        <li><a href="#阻塞队列">阻塞队列</a></li>
+        <li><a href="#生产者-消费者模式">生产者-消费者模式</a></li>
+        <li><a href="#串行线程封闭">串行线程封闭</a></li>
+        <li><a href="#双端队列-deque-和工作窃取">双端队列 Deque 和工作窃取</a></li>
+      </ul>
+    </li>
+    <li><a href="#阻塞和可中断方法">阻塞和可中断方法</a></li>
+    <li><a href="#synchronizers">Synchronizers</a>
+      <ul>
+        <li><a href="#latches">Latches</a></li>
+        <li><a href="#futuretask">FutureTask</a></li>
+        <li><a href="#semaphores">Semaphores</a></li>
+        <li><a href="#barriers">Barriers</a></li>
+      </ul>
+    </li>
+    <li><a href="#构造高效可伸缩的结果缓存">构造高效可伸缩的结果缓存</a>
+      <ul>
+        <li><a href="#实现1-基于-hashmap">实现#1: 基于 HashMap</a></li>
+        <li><a href="#实现2-基于-concurrenthashmap">实现#2: 基于 ConcurrentHashMap</a></li>
+        <li><a href="#实现3-基于-concurrenthashmap--futuretask">实现#3: 基于 ConcurrentHashMap + FutureTask</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 05.构造块</h1><p class="article date">2020-03-31</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#同步集合类">同步集合类</a>
+      <ul>
+        <li><a href="#同步集合类的问题">同步集合类的问题</a></li>
+        <li><a href="#遍历与并发修改异常-concurentmodificationexception">遍历与并发修改异常 (ConcurentModificationException)</a></li>
+        <li><a href="#隐藏的遍历">隐藏的遍历</a></li>
+      </ul>
+    </li>
+    <li><a href="#并发集合类">并发集合类</a>
+      <ul>
+        <li><a href="#concurrenthashmap">ConcurrentHashMap</a></li>
+        <li><a href="#copyonwritearraylist">CopyOnWriteArrayList</a></li>
+      </ul>
+    </li>
+    <li><a href="#阻塞队列和生产者-消费者模式">阻塞队列和生产者-消费者模式</a>
+      <ul>
+        <li><a href="#阻塞队列">阻塞队列</a></li>
+        <li><a href="#生产者-消费者模式">生产者-消费者模式</a></li>
+        <li><a href="#串行线程封闭">串行线程封闭</a></li>
+        <li><a href="#双端队列-deque-和工作窃取">双端队列 Deque 和工作窃取</a></li>
+      </ul>
+    </li>
+    <li><a href="#阻塞和可中断方法">阻塞和可中断方法</a></li>
+    <li><a href="#synchronizers">Synchronizers</a>
+      <ul>
+        <li><a href="#latches">Latches</a></li>
+        <li><a href="#futuretask">FutureTask</a></li>
+        <li><a href="#semaphores">Semaphores</a></li>
+        <li><a href="#barriers">Barriers</a></li>
+      </ul>
+    </li>
+    <li><a href="#构造高效可伸缩的结果缓存">构造高效可伸缩的结果缓存</a>
+      <ul>
+        <li><a href="#实现1-基于-hashmap">实现#1: 基于 HashMap</a></li>
+        <li><a href="#实现2-基于-concurrenthashmap">实现#2: 基于 ConcurrentHashMap</a></li>
+        <li><a href="#实现3-基于-concurrenthashmap--futuretask">实现#3: 基于 ConcurrentHashMap + FutureTask</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="同步集合类">同步集合类</h2>
+<ul>
+<li>最初 JDK 中包含的: Vector、 Hashtable</li>
+<li>JDK 1.2 增加的: 通过 Collections.synchronizedXXX 工厂方法创建的对象</li>
+</ul>
+<p>同步策略: 封装所有的状态, 并同步所有的公共方法来保证同一时间只有一个线程访问状态.</p>
+<h3 id="同步集合类的问题">同步集合类的问题</h3>
+<p>虽然同步集合类对象本身是线程安全的, 但在其上执行的复合操作, 如遍历、navigation (根据某种顺序访问下一个元素)、条件操作 (如 put-if-absent) 都不是原子的,
+Java 5.0 的 Javadoc 中间接表示了同步集合类的同步策略是使用集合本身的内置锁来保护其状态, 因此可以通过客户端锁来同步这些操作. 但这种实现可能以牺牲伸缩性为代价, 例如持锁遍历集合的同时, 其它操作都不能访问集合.</p>
+<h3 id="遍历与并发修改异常-concurentmodificationexception">遍历与并发修改异常 (ConcurentModificationException)</h3>
+<p>Iterator 是遍历集合类的标准方式, 但同步集合类对象返回的 Iterator 对象并不负责处理并发修改, 并且它们是 <em>fail-fast</em> 的, 即一旦发现遍历开始后集合发生了修改, 就立即抛出 ConcurrentModificationException, 这是一个 unchecked 异常. 集合通过记录修改次数来检测并发修改, 但是出于性能考虑, 这个检查不是同步的.</p>
+<blockquote>
+<p>注意: 单线程访问集合, 如果在遍历过程中通过 Iterator.remove 之外的方法移除元素, 也会导致抛出 CME.</p>
+</blockquote>
+<p>持锁遍历集合对导致可能的活跃性问题以及伸缩性的下降, 可选的方法是 clone 集合并在副本上遍历 (clone 本身需要同步保护). 权衡两种方法的得失要考虑集合的大小、 对每个元素操作的工作两、遍历操作相对于其它操作的频率、响应和吞吐量要求等.</p>
+<h3 id="隐藏的遍历">隐藏的遍历</h3>
+<p>要对所有可能发生遍历的代码进行同步保护, 有些遍历是不明显的, 比如以下情况都可能遍历集合</p>
+<ul>
+<li>调用集合对象的 toString、hashCode、equals、contains 等方法</li>
+<li>将集合对象作为 containsAll、removeAll、addAll 等方法的参数</li>
+<li>将集合对象作为其它集合构造方法参数</li>
+</ul>
+<p>教训是, 同步机制距离它保护的状态越远, 约有可能被遗忘忽视. 因此, 正如封装对象的状态有利于维持其不变式约束, <em>封装其同步有利于同步策略的实施</em>.</p>
+<h2 id="并发集合类">并发集合类</h2>
+<p>使用 Java 5.0 新增的并发集合类代替对应的同步集合类可以几乎无风险地获取显著的伸缩性提升.</p>
+<h3 id="concurrenthashmap">ConcurrentHashMap</h3>
+<p>设计要点</p>
+<ul>
+<li>Lock stripping 技术: 使用更细粒度的锁, 使用 16 个锁, 每个锁保护约 16 分之一的 buckets, 从而达到最大 16 路并发写操作, 极大的提供了吞吐量.</li>
+<li>Fail-fast -&gt; weekly consistent: 遍历中修改不会抛出 CME, 因此不需要持锁. 遍历反应 Iterator 创建时元素的状态, 可能但不保证反应后续的修改.</li>
+<li>从并发应用的特性出发, 牺牲 size、isEmpty 等方法的准确性, 换取更重要的方法如 get、put、containsKey、remove 的性能.</li>
+</ul>
+<p>大多数情况下直接用 ConcurrentHashMap 替换 HashTable、Collections.synchronizedMap(HashMap) 带来的主要是改进.<br>
+一个 ConcurrentHashMap 不易满足的场景是需要对整个集合上锁的情况. 由于 ConcurrentHashMap 没有独占访问的锁, 无法使用客户端锁来实现一些复合操作的原子性. 因此 ConcurrentHashMap 为一些常用的复合操作如 put-if-absent、remove-if-equal、replace-if-equal 提供了原子实现, 这些方法定义在了 ConcurrentMap 接口中.</p>
+<h3 id="copyonwritearraylist">CopyOnWriteArrayList</h3>
+<p>设计思想: 实际不可变对象一旦恰当公布, 访问时不需要再使用额外的同步. Iterator 创建时保持一个支持数组的引用, 其后不再修改. 遍历中访问到的是 Iterator 创建时的元素, 不受后续修改的影响.<br>
+复制数组会带来开销, 因此 CopyOnWriteArrayList 仅适用于遍历操作远远多于修改操作的情况, 典型的如监听器列表维护.</p>
+<h2 id="阻塞队列和生产者-消费者模式">阻塞队列和生产者-消费者模式</h2>
+<h3 id="阻塞队列">阻塞队列</h3>
+<ul>
+<li>提供方法
+<ul>
+<li>阻塞的 put - take 方法</li>
+<li>带有超时的 offer - poll 方法</li>
+</ul>
+</li>
+<li>分为 bound 和 unbound</li>
+</ul>
+<h3 id="生产者-消费者模式">生产者-消费者模式</h3>
+<p>生产者-消费者模式 (Producer-Consumer Pattern) 基于阻塞队列实现, 分割任务的生成和执行, 解耦了生产者和消费者之间的依赖, 并且简化了生产者和消费者速率差异的管理.
+典型的设计应用如线程池结合工作队列.<br>
+两种可能情况:</p>
+<ul>
+<li>生产速率小于消费效率, 导致消费效率等待, 有些场景下这是可以接受的, 有些场景下则说明需要调整生产者的速率.</li>
+<li>生产速率大于消费效率
+<ul>
+<li>bound 队列: 任务在队列中累积, 最终可能导致内存耗尽</li>
+<li>bound 队列: 可以利用以自动控制生产者的速率, 提高程序的健壮性.</li>
+</ul>
+</li>
+</ul>
+<p>应尽早识别系统中存在的生产消费模式需要, 在适用的情况下可以使用阻塞队列, 否则可以使用 Semaphore 创建其它阻塞数据结构.</p>
+<p>标准库提供的几个阻塞队列 BlockingQueue 的实现:</p>
+<table>
+<thead>
+<tr>
+<th align="left">类</th>
+<th align="left">对应</th>
+<th align="left">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">LinkedBlockingQueue</td>
+<td align="left">LinkedList</td>
+<td align="left">FIFO, u nbound</td>
+</tr>
+<tr>
+<td align="left">ArrayBlockingQueue</td>
+<td align="left">ArrayList</td>
+<td align="left">FIFO, bound</td>
+</tr>
+<tr>
+<td align="left">PriorityBlockingQueue</td>
+<td align="left">PriorityQueue</td>
+<td align="left">优先级队列, 可以以非 FIFO 顺序访问</td>
+</tr>
+<tr>
+<td align="left">SynchronousQueue</td>
+<td align="left">-</td>
+<td align="left">无容量, 用于安全递交</td>
+</tr>
+</tbody>
+</table>
+<h3 id="串行线程封闭">串行线程封闭</h3>
+<p><em>串行线程封闭</em>: 某个可变对象仅属于单一线程, 但其归属关系可以安全的移交, 只有一个线程可以访问它, 并保证公布线程在递交完成后不再访问它. 新的拥有对象的线程可以自由修改它.<br>
+标准阻塞队列实现的内部同步机制都保证了对象从生产线程向消费线程的安全公布, 可用于实现串行线程封闭. 另外还可以使用 ConcurrentHashMap 的 remove 方法、AtomicReference 的 compareAndSet 方法等实现.</p>
+<h3 id="双端队列-deque-和工作窃取">双端队列 Deque 和工作窃取</h3>
+<p>Java 6 增加了两种新的集合类型, Deque 接口允许从队列两端高效插入与删除对象, BlockingDeque 接口在此基础上增加了与 BlockingQueue 类似的阻塞等待功能. 实现如 LinkedBlockingDeque.<br>
+正如阻塞队列可用于实现生产者-消费者模式, 阻塞双端队列可用于实现*工作窃取 (work stealing)*模式. 与前者的区别在于, 每个消费者有自己的工作队列, 当自己的队列为空时, 可以从其它消费者的队首 &ldquo;窃取&rdquo; 工作. 可以减少锁碰撞, 提高伸缩性. 这种模式尤其使用与生产和消费者是同一对象的情况, 将消费过程中会产生新的工作. 如网络爬虫、GC 的标记过程等图遍历操作.</p>
+<h2 id="阻塞和可中断方法">阻塞和可中断方法</h2>
+<p>线程会因为一些原因阻塞 (block): 如等待 I/O 操作结束、等待获取锁、等待从 Thread.sleep 中唤醒、等待另一个线程的计算结果, 等等.<br>
+阻塞的线程被挂起并置于阻塞状态 (BLOCKED、WAITING、TIMED_WAITNG). 阻塞线程与执行长时间操作线程的区别在于, 它依赖于一个不受其控制的事件 —— 如 I/O 完成、锁被其它线程释放 —— 的发生, 以回到 RUNNABLE 状态继续执行.<br>
+一个方法声明抛出 InterruptedException, 如 BlockingQueue 的 get 和 put、Thread.sleap 等, 说明这个方法可能阻塞, 并且阻塞可以被中断.  每个线程都有一个 interrupted 状态, 线程的 interrupt 方法用于中断和查询中断状态.
+中断是一个<em>合作性</em>行为, 包含两个方面, 一是请求中断线程的其它线程, 一是被中断线程对中断的响应. 中断一般用于取消任务, 响应中断的阻塞方法方便基于时间取消长时间运行的工作.
+若方法包含抛出 InterruptedException 的方法调用, 则本身也是一个阻塞方法, 需要决定如何响应中断. 对于库方法一般选择有二:</p>
+<ul>
+<li>向上传递异常, 可以不 catch 异常, 或 catch 异常执行简单的清理后再次上抛.</li>
+<li>恢复中断状态, 通过调用 interrupt 方法将线程恢复到中断状态, 以便上层调用栈的代码处理.</li>
+</ul>
+<p>捕获到中断异常后不做任何处理一般是不可接受的, 除非上层调用栈代码也在完全控制之下.</p>
+<h2 id="synchronizers">Synchronizers</h2>
+<dl>
+<dt>Synchronizer</dt>
+<dd>指任何可以基于其状态控制线程控制流的对象.</dd>
+</dl>
+<p>标准库中的 synchronizer 包括阻塞队列和以下介绍的类. 如果这些不能满足需求, 可以使用 Java 提供的机制自定义.</p>
+<p>Synchronizer 的结构共性</p>
+<ul>
+<li>封装状态, 决定执行到达 synchronizer 的线程是可以通过还是必须等待</li>
+<li>操作此状态的方法</li>
+<li>高效的等待 synchronizer 进入期望状态的方法</li>
+</ul>
+<h3 id="latches">Latches</h3>
+<p><strong>作用:</strong> 延迟线程的执行直到其达到终止 (terminal) 状态<br>
+<strong>特点:</strong> Latchs 的作用像一扇控制线程运行的门:</p>
+<ul>
+<li>到达终止状态之前, 门关闭, 所有线程不能通过</li>
+<li>一旦到达终止状态, 门打开, 所有线程可通过</li>
+<li>一旦到达终止状态, 状态不再改变, 所以门永远保持打开</li>
+</ul>
+<p><strong>适用:</strong> 特定的一些活动只有另一个<em>一次性</em>的活动完成时才能继续执行, 如</p>
+<ul>
+<li>保证某个计算只有在其所需资源初始化完成后才能进行, 一个简单的 binary latch 可以实现这种控制</li>
+<li>保证一个服务在其所依赖的其它服务都启动完成后才启动, 可以让每个服务有一个关联的 binary latch, 一个服务的启动应先等待其所以来的服务的 latch, 并在启动完成后打开其所关联的 latch</li>
+<li>等于参与游戏的所有玩家准备好以继续进行</li>
+</ul>
+<p><strong>CountDownLatch</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>封装状态</td>
+<td>初始值为 n &gt; 0 的计数, 计数为 0 时才允许线程通过</td>
+</tr>
+<tr>
+<td>操作方法</td>
+<td><code>countDown()</code>, 每次执行使计数减 1</td>
+</tr>
+<tr>
+<td>等待方法</td>
+<td><code>await()</code></td>
+</tr>
+</tbody>
+</table>
+<p>应用:</p>
+<ul>
+<li>控制多个线程同时开始运行 (初始值为 1, 作为 binary latch 使用).</li>
+<li>等待多个线程结束 (初始值设置为等待的线程数).</li>
+</ul>
+<h3 id="futuretask">FutureTask</h3>
+<p>FutureTask 表示的任务通过实现 Callable 接口定义, 并且可能有未执行、执行中、完成三个状态.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>封装状态</td>
+<td>任务的执行状态, 只有任务进入完成状态才允许线程继续</td>
+</tr>
+<tr>
+<td>操作方法</td>
+<td><code>cancel()</code>,<code>set()</code>,<code>setException()</code>, 这些方法在执行任务的线程调用</td>
+</tr>
+<tr>
+<td>等待方法</td>
+<td><code>get()</code></td>
+</tr>
+</tbody>
+</table>
+<p>注:</p>
+<ul>
+<li>FutureTask 用于 Executor 框架中表示异步任务.</li>
+<li>任务进入完成状态的方式包括正常执行完成、抛出异常、取消成功. 任务一旦进入完成状态, 状态不再改变.</li>
+<li>正常执行完成的情况下, <code>get()</code> 方法返回 Callable 的 <code>call()</code> 方法在执行线程上返回的结果, FutureTask 保证此结果的安全公布.</li>
+<li><code>call()</code> 方法抛出的一切异常或错误都封装在一个 ExecutionException 对象中再次从 <code>get()</code> 方法抛出. 捕获到 ExecutionException 可能有三种原因: <code>call()</code> 方法抛出的 checked 异常、任意代码产生的 Error、运行时异常, 需要分别恰当处理.</li>
+</ul>
+<h3 id="semaphores">Semaphores</h3>
+<p><strong>作用:</strong> 控制可以访问某个特定资源的活动数, 或同一时间某个操作的执行数.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>封装状态</td>
+<td>令牌数, 初始化时指定, 只有剩余令牌数大于 0 时允许线程通过</td>
+</tr>
+<tr>
+<td>操作方法</td>
+<td><code>release()</code> 释放令牌, 令牌数加 1, <code>acquire()</code> 获取令牌, 成功后令牌数减1</td>
+</tr>
+<tr>
+<td>等待方法</td>
+<td><code>acquire()</code></td>
+</tr>
+</tbody>
+</table>
+<p>应用:</p>
+<ul>
+<li>实现资源池</li>
+<li>为普通的集合类增加限制, 限制其可以容纳的数量</li>
+</ul>
+<h3 id="barriers">Barriers</h3>
+<p><strong>作用:</strong> 等待其它线程, 只有所有线程运行到同一 barrier 点时才能继续运行.</p>
+<h4 id="cyclicbarrier">CyclicBarrier</h4>
+<p><strong>适用:</strong> 整个问题分为多个步骤, 每个步骤要等待前一个步骤完成才能开始, 并且每个步骤可以分解为固定数量的子问题并行执行. 经常用于仿真.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>封装状态</td>
+<td>到达 barrier 点的线程数</td>
+</tr>
+<tr>
+<td>操作方法</td>
+<td><code>await()</code> 线程运行到 barrier 点时调用</td>
+</tr>
+<tr>
+<td>等待方法</td>
+<td><code>await()</code></td>
+</tr>
+</tbody>
+</table>
+<p>注:</p>
+<ul>
+<li>所有线程到达 barrier 点后, 线程通过, CyclicBarrier 对象重置, 可以继续使用, 这一点和 Latch 只能使用一次不同.</li>
+<li>若某个线程的 <code>await()</code> 调用超时或被中断, 则认为 barrier 打破, 其它线程的 <code>await()</code> 抛出 BrokenBarrierException 异常终止.</li>
+<li>如果 barrier 顺利通过, <code>await()</code> 方法返回一个唯一的到达序号, 可以区分出一个带领者, 令其在下次迭代中执行某些特殊操作.</li>
+<li>构造 CyclicBarrier 对象时可以传入一个 Runnable 对象, 表示在通过 barrier 之后执行的动作.</li>
+</ul>
+<h4 id="exchanger">Exchanger</h4>
+<p><strong>适用:</strong> 参与双方在交换点执行交换, 例如用于填充 buffer 的线程和消耗 buffer 的线程交换 buffer.</p>
+<h2 id="构造高效可伸缩的结果缓存">构造高效可伸缩的结果缓存</h2>
+<p>不成熟的实现可能仅仅在单线程环境改善性能, 但在多线程环境只是把性能瓶颈变成伸缩性瓶颈.</p>
+<h3 id="实现1-基于-hashmap">实现#1: 基于 HashMap</h3>
+<p><strong>描述:</strong> 使用 HashMap 作为存储, 检查-计算-存储的整个过程使用内置锁保护.<br>
+<strong>问题:</strong> 所有访问互斥, 没有达到性能提升的目的.</p>
+<h3 id="实现2-基于-concurrenthashmap">实现#2: 基于 ConcurrentHashMap</h3>
+<p><strong>描述:</strong> 使用 ConcurrentHashMap 作为存储, 利用其安全公布保证.<br>
+<strong>问题:</strong> 两个线程可能重复执行针对一个 key 的计算, 可能造成性能甚至安全性问题.</p>
+<h3 id="实现3-基于-concurrenthashmap--futuretask">实现#3: 基于 ConcurrentHashMap + FutureTask</h3>
+<p><strong>描述:</strong> 由 ConcurrentHashMap 主要负责并发性, FutureTask 可以很大程度上避免重复计算.<br>
+<strong>问题及改善:</strong></p>
+<ol>
+<li>仍有很小的可能重复计算, 问题仍然来源于检查-计算-存储操作不是原子操作, 但是由于真正的计算推迟了, 现在只剩下 FutureTask 对象的构造, 所以出现此问题的窗口大大缩小了. 可以通过 put-if-absent 避免重复执行计算 (虽然仍存在重复创建 FutureTask 对象的可能).</li>
+<li>缓存污染问题: 使用 Future 简介缓存数据, 如果某个计算过程取消或出错, 造成缓存中存在未计算完成的缓存项. 需要在发生异常时移除缓存项.</li>
+<li>缓存过期和回收: 可以通过为每个缓存项附加时间属性实现</li>
+</ol>
+<h1 id="第一部分小结">第一部分小结</h1>
+<ul>
+<li>并发编程, 一切都关于可变状态</li>
+<li>尽量将字段声明为 final, 除非其值需要修改</li>
+<li>不可变对象天然线程安全</li>
+<li>封装有利于有效管理复杂性</li>
+<li>用锁保护每一个可变变量</li>
+<li>用同一个锁保护同一不变式约束的所有变量</li>
+<li>持锁执行复合操作</li>
+<li>从多个线程访问一个可变对象而不使用同步的程序是错误的</li>
+<li>不要抖机灵, 指望关于不必使用同步的推理</li>
+<li>将线程安全纳入设计过程中, 否则要显式声明类不是线程安全的</li>
+<li>同步策略要进入文档</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-06-task-execution/"><span class="li">&larr;</span>[JCIP] 06.任务执行</a></p><p><a class="link" href="/notes/jcip/jcip-04-composing-objects/"><span class="li">&rarr;</span>[JCIP] 04.组合对象</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

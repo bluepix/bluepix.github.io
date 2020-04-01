@@ -1,33 +1,23 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>诗川的笔记</title>
-    <link>/</link>
-    <description>Recent content on 诗川的笔记</description>
+    <title>笔记 on 诗川的笔记</title>
+    <link>/notes/</link>
+    <description>Recent content in 笔记 on 诗川的笔记</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
     <lastBuildDate>Wed, 01 Apr 2020 10:09:03 +0800</lastBuildDate>
     
-        <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+        <atom:link href="/notes/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>笔记</title>
-      <link>/notes/</link>
+      <title>Java Concurrency in Practice</title>
+      <link>/notes/jcip/</link>
       <pubDate>Wed, 01 Apr 2020 10:09:03 +0800</pubDate>
       
-      <guid>/notes/</guid>
-      <description></description>
-      
-    </item>
-    
-    <item>
-      <title>文章</title>
-      <link>/posts/</link>
-      <pubDate>Mon, 16 Mar 2020 08:28:56 +0800</pubDate>
-      
-      <guid>/posts/</guid>
+      <guid>/notes/jcip/</guid>
       <description></description>
       
     </item>
