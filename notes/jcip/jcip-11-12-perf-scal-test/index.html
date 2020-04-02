@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 11~12.性能和伸缩性, 并发程序测试&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#关于性能优化">关于性能优化</a>
+      <ul>
+        <li><a href="#性能-vs-伸缩性">性能 v.s. 伸缩性</a></li>
+        <li><a href="#评估性能取舍">评估性能取舍</a></li>
+      </ul>
+    </li>
+    <li><a href="#amdahl-定律">Amdahl 定律</a></li>
+    <li><a href="#线程引入的开销">线程引入的开销</a>
+      <ul>
+        <li><a href="#上下文切换">上下文切换</a></li>
+        <li><a href="#内存同步">内存同步</a></li>
+        <li><a href="#阻塞">阻塞</a></li>
+      </ul>
+    </li>
+    <li><a href="#减少锁争用">减少锁争用</a>
+      <ul>
+        <li><a href="#收窄锁范围">收窄锁范围</a></li>
+        <li><a href="#降低锁粒度">降低锁粒度</a></li>
+        <li><a href="#锁分段-lock-striping">锁分段 (Lock striping)</a></li>
+        <li><a href="#避免热字段">避免热字段</a></li>
+        <li><a href="#非互斥锁方案">非互斥锁方案</a></li>
+        <li><a href="#监控-cpu-使用率">监控 CPU 使用率</a></li>
+        <li><a href="#拒绝对象池">拒绝对象池</a></li>
+      </ul>
+    </li>
+    <li><a href="#降低上下文切换支出">降低上下文切换支出</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 11~12.性能和伸缩性, 并发程序测试</h1><p class="article date">2020-04-02</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#关于性能优化">关于性能优化</a>
+      <ul>
+        <li><a href="#性能-vs-伸缩性">性能 v.s. 伸缩性</a></li>
+        <li><a href="#评估性能取舍">评估性能取舍</a></li>
+      </ul>
+    </li>
+    <li><a href="#amdahl-定律">Amdahl 定律</a></li>
+    <li><a href="#线程引入的开销">线程引入的开销</a>
+      <ul>
+        <li><a href="#上下文切换">上下文切换</a></li>
+        <li><a href="#内存同步">内存同步</a></li>
+        <li><a href="#阻塞">阻塞</a></li>
+      </ul>
+    </li>
+    <li><a href="#减少锁争用">减少锁争用</a>
+      <ul>
+        <li><a href="#收窄锁范围">收窄锁范围</a></li>
+        <li><a href="#降低锁粒度">降低锁粒度</a></li>
+        <li><a href="#锁分段-lock-striping">锁分段 (Lock striping)</a></li>
+        <li><a href="#避免热字段">避免热字段</a></li>
+        <li><a href="#非互斥锁方案">非互斥锁方案</a></li>
+        <li><a href="#监控-cpu-使用率">监控 CPU 使用率</a></li>
+        <li><a href="#拒绝对象池">拒绝对象池</a></li>
+      </ul>
+    </li>
+    <li><a href="#降低上下文切换支出">降低上下文切换支出</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h1 id="性能和伸缩性">性能和伸缩性</h1>
+<p>使用线程的首要目的是提高性能, 但提高性能的同时也增加了复杂性. 当性能和安全需要冲突时, 应当安全优先.</p>
+<h2 id="关于性能优化">关于性能优化</h2>
+<p>提高性能意味着用更少的资源做更多的工作, 资源有各种, 如果一个活动的性能受某一种特定资源可用性的限制, 可以说这个活动是受限于 (bound) 这种资源的. 如受限于 CPU、受限于数据库, 等.<br>
+线程的引入本身会带来额外的开销: 协调线程工作、上下文切换、线程创建和剔除、调度. 设计不好的并行程序其性能可能还不如串行程序.<br>
+使用并发提高性能, 我们希望做到</p>
+<ol>
+<li>更高效的利用我们拥有的资源.</li>
+<li>当有更多资源可用时, 程序可以充分利用之.</li>
+</ol>
+<p>从性能监控角度说, 我们希望保持 CPU 尽量繁忙 (于有用的工作). 如果一个程序是受限于 CPU 的, 我们可以通过增加处理器来提高容量, 但如果程序本身连现有的处理器都不能充分利用, 则增加更多处理器没有意义.</p>
+<h3 id="性能-vs-伸缩性">性能 v.s. 伸缩性</h3>
+<p>性能可以以不同方式量度:</p>
+<ul>
+<li><strong>how fast</strong>: 服务时间、延迟, 给定单位量工作可以多块完成</li>
+<li><strong>how much</strong>: 容量、吞吐量, 给定一定量的资源可以完成多少工作</li>
+</ul>
+<dl>
+<dt>伸缩性 (scalibility)</dt>
+<dd>描述了程序在系统增加额外的计算资源 (CPU、内存、存储、I/O 带宽等) 时提高吞吐量和容量的能力.</dd>
+</dl>
+<p>调节并发程序的伸缩性和调节传统程序性能有很大不同. 性能以用<em>更少</em>的付出完成<em>同样</em>的工作为目的, 伸缩性的目的则是通过设法将工作并行化 (parallelize) 以利用额外的资源, 用<em>更多</em>的资源做<em>更多</em>的事. 快和多完全不同的, 有时甚至是矛盾的, 很多优化单线程程序性能的技巧是不利于伸缩性的.<br>
+在并发程序中, 往往要优先考虑伸缩性.</p>
+<h3 id="评估性能取舍">评估性能取舍</h3>
+<p>一切优化是权衡. 优化应当针对一组特定的清晰的需求, 否则就是武断的.<br>
+<em>避免武断的优化. 先对, 再快 —— 如果还不够快.</em></p>
+<p>多数优化决定都涉及很多变数, 严重依赖具体情况, 在判断某个方法比其它的 &ldquo;更快&rdquo; 之前, 问以下问题:</p>
+<ul>
+<li>&ldquo;更快&rdquo; 是什么意思?</li>
+<li>这个方法在什么条件下真的能更快? 大负载还是轻负载? 多大数据量? 结论可以通过测量支持吗?</li>
+<li>这些条件实际有多大可能出现? 结论可以通过测量支持吗?</li>
+<li>同一代码是否有可能在不同条件下使用?</li>
+<li>性能提升付出了什么隐藏代价 (比如更高的开发维护风险)? 值得吗?</li>
+</ul>
+<p><em>对性能的追求可能是造成并发程序 bug 的最大单一原因.</em><br>
+比如, 认为同步 &ldquo;太慢&rdquo; 导致了很多看上去聪明但实际危险的用法 (如 double-checked locking), 而并发错误非常难以跟踪和消除, 类似优化一定要非常谨慎.</p>
+<p>更坏的结果是牺牲了安全性, 性能实际没有提升. <em>优化应基于测量而不是猜测.</em></p>
+<h2 id="amdahl-定律">Amdahl 定律</h2>
+<p>假设程序中必须串行执行的部分所占的比例为$F$, 则在$N$个处理器的机器上, 可以得到的最大速度提升为
+$$
+Speedup \le \frac{1}{\displaystyle F + \frac{(1 - F)}{N}}
+$$</p>
+<p>根据计算, 即使是很小比例的串行部分, 利用率也会导致随着处理器数量上升显著下降.<br>
+很多串行性是隐含的, 任何对共享变量的同步访问都包含串行性. <em>所有的并发程序都含有某种串行性的来源.</em></p>
+<p>作为例子, ConcurrentLinkedQueue 相比 Collections.synchronizedList(LinkedList) 使用了更精巧的非阻塞设计, 串行部分更少, 因而具有更好的伸缩性.</p>
+<p>Amdahl 定律可以在不必准确测定串行部分的比例的情况下用于定性的分析.</p>
+<h2 id="线程引入的开销">线程引入的开销</h2>
+<h3 id="上下文切换">上下文切换</h3>
+<p>上下文切换的代价主要有两个来源</p>
+<ul>
+<li>需要操作 OS 和 JVM 中的共享数据结构, 这些操作要占用 CPU</li>
+<li>上下文切换会导致缓存失效</li>
+</ul>
+<p>因为这些代价存在, 调度器给每个可运行线程分配的时间会有一个最小量, 以减少过于频繁的上下文切换. 阻塞的线程会被挂起切换除去, 因此 I/O 等阻塞操作较多的线程会引起较多的上下文切换, 非阻塞算法也可以帮助减少上下文切换.</p>
+<p>上下文切换的实际开销与平台有关, 一个实践规律是 5000 ~ 10000 个时钟周期.</p>
+<p>Unix 的 vmstat 命令可以用来查看上下文切换数和内核态 CPU 占用, 内核占用 CPU 较多常常提示大量调度操作, 可能由 I/O 阻塞或锁争用引起.</p>
+<h3 id="内存同步">内存同步</h3>
+<p><strong>主要开销来源</strong><br>
+同步和 volatile 提供的可见性保证涉及到内存屏障 (memory barrier) 指令的使用. 内存屏障指令可能会</p>
+<ul>
+<li>刷新或无效缓存</li>
+<li>刷新硬件写缓冲区</li>
+<li>暂停执行流水线</li>
+<li>禁用某些编译器优化</li>
+</ul>
+<p>大多操作不能和内存缓存屏障乱序执行.</p>
+<p><strong>同步争用</strong><br>
+分析同步性能时要区分争用和无争用的情况 (volatile 永远是无争用的).<br>
+非争用同步的一些优化:</p>
+<ul>
+<li>同步机制本身的优化, 非争用同步的代价已经大大降低.</li>
+<li>锁消除: 现代 JVM 可以优化掉一些确定无争用的锁, 如果检测出锁对象只能在一个线程访问到, 则对这个锁的获取可以取消掉.</li>
+<li>逃逸分析 (escape analysis): JVM 可以识别出没有公布、始终封闭在一个线程的对象, 把访问这些对象时的锁取消掉.</li>
+<li>锁粗化 (lock coarsening): 编译器可以合并相邻的对同一个锁的获取和释放.</li>
+</ul>
+<p>总之, 不应过度关注无争用锁的开销, 将优化重点集中在锁争用可能发生的地方.</p>
+<p>一个线程的同步也可能因为占用共享内存总线影响其它线程的性能.</p>
+<h3 id="阻塞">阻塞</h3>
+<p>非争用同步可以完全在 JVM 内部处理, 而争用同步则需要 OS 的处理. 争用失败的线程需要阻塞. 实现阻塞的方式有两种:</p>
+<ul>
+<li>自旋等待 (spinning-wait): 重复尝试获取锁, 直到成功.</li>
+<li>挂起 (suspending): 通过操作系统挂起线程.</li>
+</ul>
+<p>如何选用取决于上下文切换的开销和阻塞时间的长短, 自旋等待适用于阻塞时间较短的情况, 挂起则相反. 有些 JVM 实现会根据历史阻塞时间选择实现, 大多数则直接挂起.</p>
+<p>线程的挂起会导致两次额外的上下文切换, 持锁线程在释放锁时要通知 OS 恢复阻塞线程, 也会有一些开销.</p>
+<h2 id="减少锁争用">减少锁争用</h2>
+<p>减少锁争用可以减少串行执行和上下文切换, 因而同时提高伸缩性和性能.<br>
+对并发程序的伸缩性的主要威胁是独占资源锁 (exclusive resource lock).<br>
+锁争用的发生率受两个因素影响: 获取锁的频率, 每次持锁的时长. 如果两者的乘积足够小, 则可以保障较少的锁争用.<br>
+有三个途径减少锁争用:</p>
+<ul>
+<li>降低持锁时间</li>
+<li>降低获取锁的频率</li>
+<li>使用允许更大并发性的机制代替独占资源锁</li>
+</ul>
+<h3 id="收窄锁范围">收窄锁范围</h3>
+<p>不需要锁保护的操作不要持锁进行, 尽量减少持锁进行的操作. 但应该注意不要将锁的范围收到 &ldquo;过小&rdquo;, 需要原子性的操作必须在同一个同步块下进行, 并且由于锁的获取毕竟有代价, 这也是需要考虑权衡的 (锁粗化可能会合并拆分的锁).</p>
+<h3 id="降低锁粒度">降低锁粒度</h3>
+<p>用多个锁代替一个锁来减少争用, 包括锁拆分 (lock spliting) 和锁分段 (lock striping) . 但更多的锁也增加了死锁的风险.
+例如: 如果一个对象包含多个独立的状态变量, 可以用不同的锁分别保护, 则每个锁的请求频率和持有时间都可以下降, 从而减少争用.</p>
+<h3 id="锁分段-lock-striping">锁分段 (Lock striping)</h3>
+<p>锁拆分有时可以扩展到多个不同数量的独立对象的集合, 称为锁分段. ConcurrentHashMap 使用此技术提高并发访问数. 一个缺点是, 要锁住整个集合以独占访问比较难.</p>
+<h3 id="避免热字段">避免热字段</h3>
+<p>如果某个共享字段, 每个修改操作都会修改它, 则对它的共享访问必须同步, 从而导致串行执行部分, 影响伸缩性. 这个字段称为一个热字段.<br>
+这是性能与伸缩性矛盾的一个例子. 例如, Map 的 size, 出于性能考虑可以另行存储以避免每次计数, 但是由于每次写操作都要修改这个值, 就产生了一个热字段, 影响伸缩性.
+CocurrentHashMap 通过给每个分段维护大小来解决这一问题. 如果获取 size 的操作比修改操作更频繁, 另一个思路是维护一个 volatile 的总数, 一旦有修改则置为无效值, 在访问时按需重新计算.</p>
+<h3 id="非互斥锁方案">非互斥锁方案</h3>
+<ul>
+<li>使用并发集合类</li>
+<li>读写锁 ReadWriteLock. 在写少读多的情况下可以大幅提高并发性.</li>
+<li>不可变对象. 对只读数据适用, 可以完全消除锁的需要.</li>
+<li>原子变量. 可用于热字段. 提供了非常细粒度的原子操作, 并且利用了现代处理器提供的底层并发原语实现. 如果类中包含少量的热字段, 不与其他字段组成不变式条件, 使用原子变量代替它们可以提高伸缩性.</li>
+</ul>
+<h3 id="监控-cpu-使用率">监控 CPU 使用率</h3>
+<p>测试伸缩性时的目标一般是提高 CPU 使用率. 可以使用 vmstat 或 mpstat 监控 CPU.<br>
+如果法相不对称的 CPU 使用 (有些 CPU 很忙, 有些闲置), 首先应考虑设法提高程序并行性.<br>
+一些可能导致 CPU 使用率不足的问题:</p>
+<ul>
+<li>测试负载不够.</li>
+<li>受限于 I/O. 可以用 iostat 等工具查看磁盘使用, 还可以查看网络流量.</li>
+<li>外部限制, 程序依赖的外部服务导致瓶颈.</li>
+<li>锁争用.</li>
+</ul>
+<p>vmstat 的一列显示了程序中处于 runnable 状态但在等待 CPU 的线程数, 如果 CPU 的利用率高, 且总是有等待执行的线程, 则程序可能从增加的 CPU 中受益.</p>
+<h3 id="拒绝对象池">拒绝对象池</h3>
+<p>现代 JVM 分配对象的效率非常高, 在单线程程序中, 即使考虑到对象池减轻 GC 压力的事实, 对象池仍然显示出对性能的损害, 除非池化对象的分配本身非常昂贵. 并发程序中则更差: JVM 的线程本地分配缓存使得对象分配完全不需要对堆上数据结构同步, 但从对象池中获取对象则需要同步 (且不考虑对象池带来的诸多复杂性), 即使不存在锁争用, 这个代价也比分配对象更高. 对象池在内存受限的平台上有用, 但如果是出于性能优化的考虑, <em>分配对象比同步代价更小</em>.</p>
+<h2 id="降低上下文切换支出">降低上下文切换支出</h2>
+<p>例如日志打印, 每个线程直接打印日志改为将日志通过生产者-消费者模型集中到一个线程打印, 虽然工作量没有减少, 但是可以减少阻塞 (原来的 I/O 阻塞转换成了少量锁争用引起的阻塞), 因而减少上下文切换的发生.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-10-avoid-liveness-hazards/"><span class="li">&rarr;</span>[JCIP] 10.避免活跃性风险</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

@@ -7,10 +7,30 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Thu, 02 Apr 2020 10:20:18 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 02 Apr 2020 14:13:11 +0800</lastBuildDate>
     
         <atom:link href="/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 11~12.性能和伸缩性, 并发程序测试</title>
+      <link>/notes/jcip/jcip-11-12-perf-scal-test/</link>
+      <pubDate>Thu, 02 Apr 2020 14:13:11 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-11-12-perf-scal-test/</guid>
+      <description>性能和伸缩性 使用线程的首要目的是提高性能, 但提高性能的同时也增加了复杂性. 当性能和安全需要冲突时, 应当安全优先. 关于性能优化 提高性能意味着用</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 10.避免活跃性风险</title>
+      <link>/notes/jcip/jcip-10-avoid-liveness-hazards/</link>
+      <pubDate>Thu, 02 Apr 2020 11:40:59 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-10-avoid-liveness-hazards/</guid>
+      <description>死锁 最简单的死锁 (deadlock) 是两个线程各自持有对方想要获取的锁, 导致无限等待. 在表示等待关系的图上存在环, 则死锁存在. 数据库系统会检测和恢复事务死锁 (</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 09.GUI 应用程序</title>

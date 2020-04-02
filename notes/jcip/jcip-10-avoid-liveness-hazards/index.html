@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 10.避免活跃性风险&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#死锁">死锁</a>
+      <ul>
+        <li><a href="#锁顺序死锁">锁顺序死锁</a></li>
+        <li><a href="#动态锁顺序死锁">动态锁顺序死锁</a></li>
+        <li><a href="#协作对象间的死锁">协作对象间的死锁</a></li>
+        <li><a href="#开放调用">开放调用</a></li>
+        <li><a href="#资源死锁">资源死锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#死锁的避免和诊断">死锁的避免和诊断</a>
+      <ul>
+        <li><a href="#带超时锁尝试">带超时锁尝试</a></li>
+        <li><a href="#通过线程-dump-分析死锁">通过线程 dump 分析死锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它活跃性问题">其它活跃性问题</a>
+      <ul>
+        <li><a href="#饥饿">饥饿</a></li>
+        <li><a href="#响应性差">响应性差</a></li>
+        <li><a href="#活锁">活锁</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 10.避免活跃性风险</h1><p class="article date">2020-04-02</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#死锁">死锁</a>
+      <ul>
+        <li><a href="#锁顺序死锁">锁顺序死锁</a></li>
+        <li><a href="#动态锁顺序死锁">动态锁顺序死锁</a></li>
+        <li><a href="#协作对象间的死锁">协作对象间的死锁</a></li>
+        <li><a href="#开放调用">开放调用</a></li>
+        <li><a href="#资源死锁">资源死锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#死锁的避免和诊断">死锁的避免和诊断</a>
+      <ul>
+        <li><a href="#带超时锁尝试">带超时锁尝试</a></li>
+        <li><a href="#通过线程-dump-分析死锁">通过线程 dump 分析死锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#其它活跃性问题">其它活跃性问题</a>
+      <ul>
+        <li><a href="#饥饿">饥饿</a></li>
+        <li><a href="#响应性差">响应性差</a></li>
+        <li><a href="#活锁">活锁</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="死锁">死锁</h2>
+<p>最简单的死锁 (deadlock) 是两个线程各自持有对方想要获取的锁, 导致无限等待. 在表示等待关系的图上存在环, 则死锁存在.
+数据库系统会检测和恢复事务死锁 (通过取消其中一个事务), 但 JVM 不会处理死锁. 而死锁经常直到部署到生产环境, 在严重负载下才发生, 造成事故.</p>
+<h3 id="锁顺序死锁">锁顺序死锁</h3>
+<p>锁顺序死锁 (Lock-ordering deadlock) 是指, 当两个线程以不同的顺序获取两个锁时, 可能发生死锁.<br>
+<em>一个程序中, 如果所有线程获取所有的锁都按照一定的全局顺序, 则不会发生死锁.</em><br>
+分析锁顺序的一致性需要对程序的全局分析.</p>
+<h3 id="动态锁顺序死锁">动态锁顺序死锁</h3>
+<p>一种特殊的情形是, 程序局部看上去是按照相同顺序获取锁, 但实际上锁引用的动态赋值隐藏着不同顺序的可能. 避免这种死锁要求我们去<em>推导</em>锁的全局顺序. 即用某种预定义的固定机制来保证获取顺序的一致.<br>
+一个可行的锁顺序推导方法是使用 <code>System.identityHashCode</code> 方法, 此方法返回默认的 <code>Object.hashCode</code> 方法返回的值, 可以根据这个值的大小决定锁获取的顺序. Hash code 有极少数发生碰撞的情况, 一个方法是在获取两个 hash code 相同的锁之前先获取打破平局用的第三个锁, 由于所有遇到这种情况的线程都先获取平局锁, 这个锁不会增加死锁的可能, 由于只能有一个线程继续执行获取两个锁的操作, 避免了唯一可能死锁的情况. 示例代码:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">int</span> h1 <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">identityHashCode</span><span style="color:#f92672">(</span>lock1<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">int</span> h2 <span style="color:#f92672">=</span> System<span style="color:#f92672">.</span><span style="color:#a6e22e">identityHashCode</span><span style="color:#f92672">(</span>lock2<span style="color:#f92672">);</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>h1 <span style="color:#f92672">&lt;</span> h2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// do something
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>h1 <span style="color:#f92672">&gt;</span> h2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#75715e">// do something
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>tieLock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock1<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            <span style="color:#66d9ef">synchronized</span> <span style="color:#f92672">(</span>lock2<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+               <span style="color:#75715e">// do something
+</span><span style="color:#75715e"></span>            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>如果涉及到的锁对象有内在的顺序属性, 则可以直接使用, 不必使用 hash code.</p>
+<blockquote>
+<p>用关系理论的概念说, 协调锁获取顺序要求为所有锁集合找到一个严格偏序关系.</p>
+</blockquote>
+<h3 id="协作对象间的死锁">协作对象间的死锁</h3>
+<p>在同一个方法中连续获取两个锁是容易观察到的死锁风险, 但某些情况下, 存在协作关系的对象之间相互调用可能导致不易发现的死锁.<br>
+任何持锁调用 alien 方法的行为都会造成活跃性隐患. 调用者不知道 alien 方法中是否会有耗时操作或者锁获取行为, 可能会导致难以分析的活跃性问题.</p>
+<h3 id="开放调用">开放调用</h3>
+<p>开放调用 (Open call) 是指不持锁的情况下对方法的调用.
+坚持只使用开放调用有利于定位获取多个锁的代码路径, 保证锁获取顺序的一致性.
+例如, 为了语法上的紧凑使用 synchronized 方法, 容易导致持锁方法调用 (如果方法体中有对 alien 方法的调用), 使用更小粒度的 synchronized 块代替, 可能的情况下把方法调用移出同步块, 可以有效避免死锁.<br>
+开放调用的使用有时和原子性要求是矛盾的. 这时要识别原子性的牺牲是否是可以接受的, 如果不能接受, 可以使用其它方法来满足原子性要求.</p>
+<h3 id="资源死锁">资源死锁</h3>
+<p>与等待获取锁一样, 等待资源也可能导致死锁, 例如两个线程以相反的顺序从资源池中获取资源, 有可能导致两个线程阻塞等待对方占用的资源, 引起死锁.<br>
+另一种资源相关死锁是线程饥饿死锁, 在<a href="/notes/jcip/jcip-08-thread-pools/#线程饥饿死锁">线程池</a>一章中介绍过.</p>
+<h2 id="死锁的避免和诊断">死锁的避免和诊断</h2>
+<p>如果程序中存在多个锁, 锁顺序应当是设计的一部分: 应尽量减少潜在的锁互动, 锁顺序协议应当写入文档, 并始终遵守.<br>
+在检查程序时, 首先定位到获取多个锁的代码, 再全局分析确保整个程序的获取锁的顺序是一致的. 只使用开发调用可以方便这种分析, 不管是通过代码 review 还是自动化字节码或源码分析.</p>
+<h3 id="带超时锁尝试">带超时锁尝试</h3>
+<p>可以用显式锁 Lock 的带超时的 <code>tryLock</code> 代替内置锁. 超时后获取锁失败, 调用者不需要知道具体原因是什么 (死锁、其它线程持锁执行耗时操作等), 但可以有机会做出处理, 而不必要求整个 JVM 重启.<br>
+带超时锁获取可以在某些情况下解决死锁问题. 如果所有的锁在同一段代码中获取 (而不是通过嵌套方法调用), 获取锁超时的线程可以释放其它锁, 等待一会儿再尝试, 即使获取锁的顺序不同, 使用这种方法也可以避免死锁.</p>
+<h3 id="通过线程-dump-分析死锁">通过线程 dump 分析死锁</h3>
+<p>通过 <code>kill -3</code> 发送 SIGINT 信号给 JVM 可以出发一次线程 dump, 可以用于分析已经发生的死锁.</p>
+<h2 id="其它活跃性问题">其它活跃性问题</h2>
+<h3 id="饥饿">饥饿</h3>
+<p>饥饿 (Starvation) 是指一个线程长期被禁止访问它继续运行所需要的资源. 最常见的是 CPU 周期饥饿.<br>
+Java 应用中饥饿的发生可能由线程优先级的不当使用导致, 还有可能因为某些线程持锁执行不终止的操作.
+线程优先级的实现是平台相关的, 应该避免使用, 一旦使用就引入了平台依赖, 可能造成活跃性问题. 多数并发程序可以对所有线程采用默认优先级.</p>
+<blockquote>
+<p><code>Thread.yield</code> 和 <code>Thread.sleep(0)</code> 的语义在 JLS 中没有定义. Unix 系统的 sleep(0) 会将当前线程放置到运行队列的队尾, 让位给其它同优先级的线程, 但 Java 中没有这种保证, 尽管有些 JVM 实现的 <code>yield</code> 方法有此作用.</p>
+</blockquote>
+<h3 id="响应性差">响应性差</h3>
+<p>GUI 程序的 UI 线程响应缓慢有可能是后台计算线程抢占 CPU 引起的. 这是少数可以考虑使用线程优先级的场景之一. 响应性差也可能是由不好的锁管理策略引起的.</p>
+<h3 id="活锁">活锁</h3>
+<p>活锁 (LiveLock) 是一种活跃性错误, 指一个线程虽然没有死锁, 但是因为一直重试某个操作却总是失败而无法继续执行.<br>
+活锁经常在事务消息队列应用中出现, 处理出错的消息被放回队首, 如果处理消息代码的一个 bug 导致消息仍然处理出错, 处理线程就会始终在处理消息-出错放回队首的操作中循环, 线程没有阻塞, 但无法继续进行. 这种问题的起因常常是错误恢复代码误将不可恢复错误当作可恢复错误处理.<br>
+另一种造成活锁的可能是多个协作线程响应其它线程的操作改变自己的状态, 导致所有线程都不能继续. 想象两个过于礼貌的人对面相遇, 各自让到另一边, 然后重复此过程. 解决这种问题一般可以通过为重试机制引入一定随机性. 类比以太网的冲突解决: 等待随机时间后重试.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a><a class="tag" href=/tags/%E6%AD%BB%E9%94%81/>死锁</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-11-12-perf-scal-test/"><span class="li">&larr;</span>[JCIP] 11~12.性能和伸缩性, 并发程序测试</a></p><p><a class="link" href="/notes/jcip/jcip-09-gui-app/"><span class="li">&rarr;</span>[JCIP] 09.GUI 应用程序</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>
