@@ -13,12 +13,12 @@
     
     
     <item>
-      <title>[JCIP] 11~12.性能和伸缩性, 并发程序测试</title>
-      <link>/notes/jcip/jcip-11-12-perf-scal-test/</link>
+      <title>[JCIP] 11.性能和伸缩性</title>
+      <link>/notes/jcip/jcip-11-perf-n-scal/</link>
       <pubDate>Thu, 02 Apr 2020 14:13:11 +0800</pubDate>
       
-      <guid>/notes/jcip/jcip-11-12-perf-scal-test/</guid>
-      <description>性能和伸缩性 使用线程的首要目的是提高性能, 但提高性能的同时也增加了复杂性. 当性能和安全需要冲突时, 应当安全优先. 关于性能优化 提高性能意味着用</description>
+      <guid>/notes/jcip/jcip-11-perf-n-scal/</guid>
+      <description>使用线程的首要目的是提高性能, 但提高性能的同时也增加了复杂性. 当性能和安全需要冲突时, 应当安全优先. 关于性能优化 提高性能意味着用更少的资源做</description>
       
     </item>
     
