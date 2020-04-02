@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 08.线程池的应用&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#任务与执行策略的隐含耦合">任务与执行策略的隐含耦合</a>
+      <ul>
+        <li><a href="#任务对执行策略的隐含要求">任务对执行策略的隐含要求</a></li>
+        <li><a href="#线程饥饿死锁">线程饥饿死锁</a></li>
+        <li><a href="#长期运行任务">长期运行任务</a></li>
+      </ul>
+    </li>
+    <li><a href="#确定线程池大小">确定线程池大小</a></li>
+    <li><a href="#配置线程池">配置线程池</a>
+      <ul>
+        <li><a href="#线程创建和剔除">线程创建和剔除</a></li>
+        <li><a href="#管理排队任务">管理排队任务</a></li>
+        <li><a href="#饱和策略">饱和策略</a></li>
+        <li><a href="#线程工厂">线程工厂</a></li>
+        <li><a href="#修改线程池属性">修改线程池属性</a></li>
+        <li><a href="#派生线程池类">派生线程池类</a></li>
+      </ul>
+    </li>
+    <li><a href="#并行化递归算法">并行化递归算法</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 08.线程池的应用</h1><p class="article date">2020-04-01</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#任务与执行策略的隐含耦合">任务与执行策略的隐含耦合</a>
+      <ul>
+        <li><a href="#任务对执行策略的隐含要求">任务对执行策略的隐含要求</a></li>
+        <li><a href="#线程饥饿死锁">线程饥饿死锁</a></li>
+        <li><a href="#长期运行任务">长期运行任务</a></li>
+      </ul>
+    </li>
+    <li><a href="#确定线程池大小">确定线程池大小</a></li>
+    <li><a href="#配置线程池">配置线程池</a>
+      <ul>
+        <li><a href="#线程创建和剔除">线程创建和剔除</a></li>
+        <li><a href="#管理排队任务">管理排队任务</a></li>
+        <li><a href="#饱和策略">饱和策略</a></li>
+        <li><a href="#线程工厂">线程工厂</a></li>
+        <li><a href="#修改线程池属性">修改线程池属性</a></li>
+        <li><a href="#派生线程池类">派生线程池类</a></li>
+      </ul>
+    </li>
+    <li><a href="#并行化递归算法">并行化递归算法</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="任务与执行策略的隐含耦合">任务与执行策略的隐含耦合</h2>
+<h3 id="任务对执行策略的隐含要求">任务对执行策略的隐含要求</h3>
+<p>Executor 框架的目的是解耦任务及其执行, 但某些类型的任务需要特定的执行策略:</p>
+<ul>
+<li><strong>依赖性任务.</strong> 如果提交的任务有依赖关系, 对执行策略施加了隐含的约束, 需要小心管理避免产生活跃性问题.</li>
+<li><strong>利用线程封闭的任务.</strong> 要求 Executor 是单线程的.</li>
+<li><strong>对响应时间敏感的任务.</strong> 向单线程 Executor 中提交长时间任务, 或向线程数量较少的 Executor 中提交多个长时间任务, 可能影响这个服务管理的任务的响应时间.</li>
+<li><strong>使用 ThreadLocal 的任务.</strong> 线程池可能回收闲置线程或替换异常线程, ThreadLocal 的使用只有在其所维护值的生命周期受限于任务的情况下是合理的, 而不能用于多个任务之间交换信息.</li>
+</ul>
+<p>线程池在任务均匀且独立 (homogenous and independent) 的情况下表现最佳.</p>
+<p><em>有些任务的特点要求或排除了特定的执行策略. 如: 依赖其他任务的任务, 要求线程池足够大, 永远不会排队或拒绝任务; 利用线程封闭的任务要求串行执行. 这些要求应当在文档中注明, 以免将来的维护者替换使用不兼容的策略导致安全或活跃性问题.</em></p>
+<h3 id="线程饥饿死锁">线程饥饿死锁</h3>
+<p>如果线程池中的所有任务都在阻塞等待还在工作队列中的任务的执行结果, 就会造成死锁, 这种情况称为线程饥饿死锁 (thread starvation deadlock).<br>
+如: 在单线程线程池中, 正在执行的任务提交了一个它依赖的任务并等待其结果. 类似的, 使用 barrier 协调多个线程也可能在线程池不大的情况下造成饥饿死锁.<br>
+只要向 Executor 中提交非独立的任务, 就要注意可能的线程饥饿死锁. 并且在代码或配置 Executor 的配置文件中注明任何可能的线程池大小和配置限制.<br>
+除了线程池大小, 其它资源限制也可能造成同样的问题.</p>
+<h3 id="长期运行任务">长期运行任务</h3>
+<p>长期运行的任务可能占用线程池导致其它短期任务也无法响应.<br>
+可以通过访问资源时使用带超时的等待来避免, 如果线程池频繁出现充满阻塞的任务, 考虑线程池过小.</p>
+<h2 id="确定线程池大小">确定线程池大小</h2>
+<p><strong>不写死:</strong> 线程池的最佳大小与提交的任务的类型与部署形同的特性有关. 多数情况下线程池大小不应硬编码, 而应当</p>
+<ul>
+<li>由某种配置机制提供, 或者</li>
+<li>通过查询 <code>Runtime.availableProcessors</code> 属性动态计算</li>
+</ul>
+<p><strong>慎选取:</strong> 线程池大小的选取</p>
+<ul>
+<li>过大: 浪费 CPU 和内存资源</li>
+<li>过小: 吞吐量受限制</li>
+</ul>
+<p><strong>看任务:</strong> 确定线程池的大小要了解计算环境 (多少处理器? 多大内存?)、资源预算、任务特性 (计算多还是 I/O 多? 是否需要稀有资源?). 如果有多种类型、行为差异很大的任务存在, 应当考虑使用多个线程池以便各自针对其工作负载调节.</p>
+<ul>
+<li>对于计算量大的任务, N 个 CPU 的系统在 N + 1 个线程的线程池上一般可以达到比较好的利用率, + 1 是为了某些线程因某些原因暂停时保持 CPU 工作.</li>
+<li>对于 I/O 多的任务, 需要更大的线程池, 因为不是所有线程都大量占用 CPU.</li>
+</ul>
+<p><strong>计算</strong> 要恰当的设置线程池大小, 需要估计任务的等待时间和运算时间的比例, 这个比例不需要精确, 可以通过实际运行测度. 也可以通过调整线程池大小观测结果来决定.<br>
+设<br>
+$$
+\begin{aligned}
+N_{cpu} &amp;= CPU 数量\\U_{cpu} &amp;= 目标 CPU 利用率, 0 &lt; U_{cpu} &lt; 1\\\frac{W}{C} &amp;= 等待时间与计算时间比
+\end{aligned}
+$$</p>
+<p>则保持 CPU 在期望利用率的最优线程数为
+$$
+N_{threads} = N_{cpu} * U_{cpu} * (1 + \frac{W} {C})
+$$</p>
+<p><strong>其它资源</strong> 除了 CPU 周期, 其它资源如内存、文件句柄数、socket 句柄数、数据库连接等也会对线程池大小施加限制. 这种限制的计算比较简单: 用总量除以每个任务需要的量即可.</p>
+<p><strong>池化资源</strong> 如果任务需要某种池化资源, 则线程池大小与资源池大小会互相施加限制.</p>
+<h2 id="配置线程池">配置线程池</h2>
+<p>Executors 类提供了数个工厂方法创建线程池, 如果这种预定义的配置不满足需求, 可以自行构造. 最通用的构造方法:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#a6e22e">ThreadPoolExecutor</span><span style="color:#f92672">(</span><span style="color:#66d9ef">int</span> corPoolSize<span style="color:#f92672">,</span>
+                          <span style="color:#66d9ef">int</span> maxiumPoolSize<span style="color:#f92672">,</span>
+                          <span style="color:#66d9ef">long</span> keepAliveTime<span style="color:#f92672">,</span>
+                          TimeUnit unit<span style="color:#f92672">,</span>
+                          BlockingQueue<span style="color:#f92672">&lt;</span>Runnable<span style="color:#f92672">&gt;</span> workQueue<span style="color:#f92672">,</span>
+                          ThreadFactory threadFactory<span style="color:#f92672">,</span>
+                          RejectedExecutionHandler handler<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="线程创建和剔除">线程创建和剔除</h3>
+<dl>
+<dt>核心线程数、最大线程数和 keep-alive 时长, 这三个参数控制了线程的创建和剔除.</dt>
+<dt><strong>核心线程数</strong></dt>
+<dd>目标线程数, 即使没有任务要执行的情况下, 实现仍试图保持线程池在这个大小, 只有任务队列已满的时候才会创建新线程.</dd>
+</dl>
+<blockquote>
+<ol>
+<li>线程池对象创建的时候, 核心线程并不会立即启动, 而是等到有任务提交时才启动, 可以通过设置 <code>prestartAllCoreThreads</code> 提前启动核心线程.</li>
+<li>将核心线程设为 0 以期在没有任务时剔除所有线程是不行的, 因为队列不满则不会创建新线程, 导致任务得不到执行. 可以将核心线程数设置为非 0, 并设置 <code>allowCoreThreadTimeout</code> 允许核心线程剔除来达到目的.</li>
+</ol>
+</blockquote>
+<dl>
+<dt><strong>最大线程数和 keep-alive 时长</strong></dt>
+<dd>最大线程数是线程数的上限, 当一个线程闲置的时间超过 keep-alive 时间的时候, 就成为候选回收对象, 如果当前线程池大小超出核心线程数, 这些线程会被终止剔除.</dd>
+</dl>
+<p>设置这些参数需要权衡, 及时剔除闲置线程可以释放资源供其它工作使用, 但当执行需求上升时创建线程会引入一些延迟.<br>
+<code>Executors.newFixedThreadPool</code> 创建线程池时将核心线程数和最大线程数设为相等, 相当与 keep-alive 时间无限大; <code>Executors.newCachedThreadPool</code> 创建的线程池核心线程数为 0, 最大线程数为 <code>Integer.MAX_VALUE</code>, keep-alive 默认为 1 分钟.</p>
+<h3 id="管理排队任务">管理排队任务</h3>
+<p>对于任务产生速率的不均衡, 任务队列可以予以平滑, 但如果任务持续高速产生, 必须线程池提过流量控制机制.</p>
+<p>三种任务排队方式:</p>
+<ul>
+<li>无界队列 (unbound queue)</li>
+<li>有界队列 (bound queue)</li>
+<li>同步递交 (synchronous handoff)</li>
+</ul>
+<p><strong>无界队列</strong>本身 (一般是无界 LinkedBlockingQueue 实现) 可以无限制的接受任务排队, 导致资源耗尽. <code>Executors.newFixedThreadPool</code>、<code>Executors.newSingleThreadPool</code> 默认使用无界队列.</p>
+<blockquote>
+<p>无界 LinkedBlockingQueue 实际是容量设为 <code>Integer.MAX_VALUE</code> 的实例, 例如使用默认构造方法创建的实例.</p>
+</blockquote>
+<p>更稳健的方式是使用<strong>有界队列</strong> (一般可用有界 LinkedBlockingQueue、ArrayBlockingQueue、PriorityBlockingQueue 实现). 但需要指定饱和策略 (saturation policy) 应对队列满的情况. 队列大小和线程数要配合调校. 大的队列配合小线程数可能降低内存使用、CPU 使用和上下文切换, 但潜在影响吞吐量.<br>
+如果线程池很大甚至无界, 使用<strong>同步递交</strong> (用 SynchronousQueue 实现) 可以更快的提交任务, SynchronousQueue 没有容量, 提交的任务需要直接分配线程执行. 只使用与线程池很大或者可以接受拒绝执行的情况. <code>Executors.newCachedThreadPool</code> 默认使用 SynchronousQueue.</p>
+<p>如果执行任务需要满足非 FIFO 的优先级, 可以使用 PriorityBlockingQueue 作为队列.
+对于有相互依赖关系的任务, 有界队列或有界线程池都可能导致线程饥饿死锁. 可以:</p>
+<ul>
+<li>使用无界配置</li>
+<li>有界线程池 + SynchronousQueue + caller-run 饱和处理策略</li>
+</ul>
+<h3 id="饱和策略">饱和策略</h3>
+<p>当线程池不能容纳新任务提交时 (包括已径 shutdown 的情况), 根据饱和策略处理, 设置方法是 <code>setRejectedExecutionHandler</code>.</p>
+<ul>
+<li><strong>AbortPolicy.</strong> 默认值, 使 <code>execute</code> 抛出 RejectedExecutionException, 由调用者捕获处理.</li>
+<li><strong>DiscardPolicy.</strong> 静默丢弃无法执行的任务.</li>
+<li><strong>DiscardOldestPolicy.</strong> 丢弃本该下一个执行的任务, 尝试重新提交新任务. 如果队列是优先级队列会导致优先级最高的排队任务被丢弃, 因此一般不应使用这种策略.</li>
+<li><strong>CallerRunPolicy.</strong> 如果线程池不能接受新任务, 任务直接在调用 <code>execute</code> 的线程执行. 这个策略期望能借此降低任务产生速度, 将处理能力的限制逐步外推 (例如对于 Web 服务: 线程池 -&gt; 队列 -&gt; 应用 -&gt; TCP 层 -&gt; Client), 达到限流、优雅降级的目的.</li>
+</ul>
+<p>没有一种预定义的策略允许 <code>execute</code> 方法阻塞等待, 这种需求可以通过一个外置的 Semaphore 对象满足.</p>
+<h3 id="线程工厂">线程工厂</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ThreadFactory</span> <span style="color:#f92672">{</span>
+    Thread <span style="color:#a6e22e">newThread</span><span style="color:#f92672">(</span>Runnable r<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>使用自定义的 ThreadFactory 实例可以用来给线程池创建的线程设置统一的 UncaughtExceptionHandler、使用派生线程类、打印日志、为线程设置有意义的名称等.<br>
+使用安全策略 (security policy) 对特定代码授权, 可能需要使用 <code>privilegedThreadFactory</code> 方法创建线程工厂实例.</p>
+<h3 id="修改线程池属性">修改线程池属性</h3>
+<p>线程池的各个属性一般可以在构造后修改. Executor 提供了一个 <code>unconfigurableExecutorService</code> 方法, 可以将普通的 ExecutorService 实例包裹为不可修改配置的实例. 可以用在向不信任代码提供执行服务的场景. 特别的, <code>newSingleThreadPool</code> 返回的是经过此处理的实例, 因为它提供了串行执行的特殊保证, 意外修改可能导致问题.</p>
+<h3 id="派生线程池类">派生线程池类</h3>
+<p>线程池类可以派生, 提供了以下钩子方法:</p>
+<ul>
+<li><code>beforeExecution</code>: 在执行任务的工作线程调用.</li>
+<li><code>afterExecution</code>: 在执行任务的工作线程调用, 当任务正常完成执行或抛出异常时调用 (执行抛出 Error 则不会调用). 如果<code>beforeExecution</code> 抛出异常, 则任务不会执行, 此方法也不会调用.</li>
+<li><code>terminated</code> 线程池完成关闭过程后调用. 此时所有任务已完成, 所有工作线程已停止. 此方法可以用于执行一些清理、通知等工作.</li>
+</ul>
+<h2 id="并行化递归算法">并行化递归算法</h2>
+<p>一个顺序循环迭代过程, 如果各次迭代之间没有依赖关系, 并且每次迭代执行的任务量超过了维护一个新任务的开销, 可以使用线程池将迭代转为并行. 即在每次迭代中把要执行的操作作为任务提交到线程池.<br>
+这种方法也适用于递归过程中的循环.<br>
+一个使用模式是, 临时创建一个 Executor 对象, 循环或递归提交任务, 调用 <code>shutdown</code> 和 <code>awaitTermination</code> 等待执行完成.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a><a class="tag" href=/tags/%E7%BA%BF%E7%A8%8B%E6%B1%A0/>线程池</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-09-gui-app/"><span class="li">&larr;</span>[JCIP] 09.GUI 应用程序</a></p><p><a class="link" href="/notes/jcip/jcip-07-cancellation-n-shutdown/"><span class="li">&rarr;</span>[JCIP] 07.取消和关闭</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

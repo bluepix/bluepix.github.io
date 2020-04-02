@@ -182,7 +182,7 @@
 <ul>
 <li>java.io 中的同步 socket I/O. Socket 读写时, InputStream 的 <code>read</code> 方法和 OutputStream 的 <code>write</code> 方法都是阻塞且不支持中断的, 关闭 socket 可以使这些方法抛出 SocketException.</li>
 <li>java.nio 中的同步 I/O. 中断一个在 InterruptibleChannel 对象上的线程会导致抛出 ClosedByInterruptExecption 并关闭 channel (同时导致其它所有阻塞在此 channel 的线程抛出 ClosedByInterruptExecption). 关闭一个 InterruptibleChannel 导致阻塞在 channel 操作上的线程抛出 AsynchronousCloseException. 多数标准 Channel 实现了 InterruptibleChannel.</li>
-<li>使用 Selector 的一步 I/O. 如果线程阻塞在 <code>Selector.select</code> 方法, 调用 <code>close</code> 或 <code>wakeup</code> 可以使其立即返回.</li>
+<li>使用 Selector 的异步 I/O. 如果线程阻塞在 <code>Selector.select</code> 方法, 调用 <code>close</code> 可以使其抛出 ClosedSelectedException 异常返回.</li>
 <li>锁获取. 如果是内置锁, 没有办法. 外置的 Lock 类提供了 <code>lockInterruptibly</code> 方法.</li>
 </ul>
 <p>自定义的取消方法可以封装在自定义的 RunnableFuture 的 <code>cancel</code> 方法中, 在创建线程池时可以覆盖 newTaskFor 方法返回自定义的 RunnableFuture 类实例. (RunnableFuture 实现了 Runnable 和 Future, FutureTaks 实现了 RunnableFuture).</p>
@@ -243,7 +243,7 @@
 <p>JVM 对何时甚至是否调用 <code>finalize</code> 都不提供保证, 大多数情况下, finally 块和显式的关闭操作都能更好的处理资源释放 (只有一个例外: 需要处理 native 方法中获取的资源). 因此, 应避免使用 finalizers.</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
     <a id="gototop"></a>
-</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-06-task-execution/"><span class="li">&rarr;</span>[JCIP] 06.任务执行</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-08-thread-pools/"><span class="li">&larr;</span>[JCIP] 08.线程池的应用</a></p><p><a class="link" href="/notes/jcip/jcip-06-task-execution/"><span class="li">&rarr;</span>[JCIP] 06.任务执行</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
     <p class="copyright">©2020 bluepix</p>
     <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
         target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 

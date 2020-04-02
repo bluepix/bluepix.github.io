@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 09.GUI 应用程序&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么-gui-是单线程的">为什么 GUI 是单线程的</a>
+      <ul>
+        <li><a href="#单线程事件处理">单线程事件处理</a></li>
+      </ul>
+    </li>
+    <li><a href="#共享数据模型">共享数据模型</a></li>
+    <li><a href="#其它单线程子系统">其它单线程子系统</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 09.GUI 应用程序</h1><p class="article date">2020-04-02</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么-gui-是单线程的">为什么 GUI 是单线程的</a>
+      <ul>
+        <li><a href="#单线程事件处理">单线程事件处理</a></li>
+      </ul>
+    </li>
+    <li><a href="#共享数据模型">共享数据模型</a></li>
+    <li><a href="#其它单线程子系统">其它单线程子系统</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="为什么-gui-是单线程的">为什么 GUI 是单线程的</h2>
+<p>多线程 GUI 极易产生死锁.<br>
+死锁的一个可能原因是用户操作和界面响应的处理方向矛盾. 用户的操作事件一般是从 OS 到应用<em>向上</em>传递, 而界面响应是从应用到 OS <em>向下</em>传递, 很容易产生已相反的顺序访问界面组件, 进而导致死锁.<br>
+另一个原因与 MVC 有关, Controller 可以修改 Model, 通知 View 更新, 也可以直接调用 View, 后者由向 Model 查询状态, 同样可能导致相反的访问顺序引起死锁.</p>
+<p>单线程 GUI 通过线程封闭来达到线程安全.</p>
+<h3 id="单线程事件处理">单线程事件处理</h3>
+<p>GUI 一般在单线程中处理细粒度的事件. 一个问题在与长时间的任务可能阻塞任务处理线程, 所以这些任务应推到其它线程执行.
+短期任务一般可以直接在任务处理线程执行, 长期任务则应在其它线程执行, 如有必要执行向事件线程通知执行进度和完成.</p>
+<h2 id="共享数据模型">共享数据模型</h2>
+<p>GUI 程序的状态可以维护在线程安全的更像数据模型 (model) 中. View 组件可以维护自有的 model, 用线程封闭保护. 这种模式称为分割数据模型 (split-model).</p>
+<h2 id="其它单线程子系统">其它单线程子系统</h2>
+<p>除了 GUI 系统, 很多其它子系统可以利用线程封闭来达到线程安全的目的, 利用已有的组件如 Future + <code>Executors.newSingleThreadPool</code> 可以方便的实现这种要求.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-08-thread-pools/"><span class="li">&rarr;</span>[JCIP] 08.线程池的应用</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

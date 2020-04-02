@@ -7,10 +7,30 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Wed, 01 Apr 2020 10:09:03 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 02 Apr 2020 10:20:18 +0800</lastBuildDate>
     
         <atom:link href="/notes/jcip/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 09.GUI 应用程序</title>
+      <link>/notes/jcip/jcip-09-gui-app/</link>
+      <pubDate>Thu, 02 Apr 2020 10:20:18 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-09-gui-app/</guid>
+      <description>为什么 GUI 是单线程的 多线程 GUI 极易产生死锁. 死锁的一个可能原因是用户操作和界面响应的处理方向矛盾. 用户的操作事件一般是从 OS 到应用向上传递, 而界面</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 08.线程池的应用</title>
+      <link>/notes/jcip/jcip-08-thread-pools/</link>
+      <pubDate>Wed, 01 Apr 2020 19:59:34 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-08-thread-pools/</guid>
+      <description>任务与执行策略的隐含耦合 任务对执行策略的隐含要求 Executor 框架的目的是解耦任务及其执行, 但某些类型的任务需要特定的执行策略: 依赖性任务. 如果提交的任</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 07.取消和关闭</title>
