@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 15.原子变量和非阻塞同步&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁的缺点">锁的缺点</a>
+      <ul>
+        <li><a href="#性能损耗">性能损耗</a></li>
+        <li><a href="#活跃性问题">活跃性问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#硬件对并发的支持">硬件对并发的支持</a>
+      <ul>
+        <li><a href="#compare-and-swap">Compare and swap</a></li>
+        <li><a href="#jvm-对-cas-的支持">JVM 对 CAS 的支持</a></li>
+      </ul>
+    </li>
+    <li><a href="#原子变量类型">原子变量类型</a>
+      <ul>
+        <li><a href="#作为-更好的-volatile">作为 &ldquo;更好的 volatile&rdquo;</a></li>
+        <li><a href="#性能比较">性能比较</a></li>
+      </ul>
+    </li>
+    <li><a href="#非阻塞算法">非阻塞算法</a>
+      <ul>
+        <li><a href="#定义和实现">定义和实现</a></li>
+        <li><a href="#原子字段更新">原子字段更新</a></li>
+        <li><a href="#aba-问题">ABA 问题</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 15.原子变量和非阻塞同步</h1><p class="article date">2020-04-03</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁的缺点">锁的缺点</a>
+      <ul>
+        <li><a href="#性能损耗">性能损耗</a></li>
+        <li><a href="#活跃性问题">活跃性问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#硬件对并发的支持">硬件对并发的支持</a>
+      <ul>
+        <li><a href="#compare-and-swap">Compare and swap</a></li>
+        <li><a href="#jvm-对-cas-的支持">JVM 对 CAS 的支持</a></li>
+      </ul>
+    </li>
+    <li><a href="#原子变量类型">原子变量类型</a>
+      <ul>
+        <li><a href="#作为-更好的-volatile">作为 &ldquo;更好的 volatile&rdquo;</a></li>
+        <li><a href="#性能比较">性能比较</a></li>
+      </ul>
+    </li>
+    <li><a href="#非阻塞算法">非阻塞算法</a>
+      <ul>
+        <li><a href="#定义和实现">定义和实现</a></li>
+        <li><a href="#原子字段更新">原子字段更新</a></li>
+        <li><a href="#aba-问题">ABA 问题</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<p><em>原子变量和非阻塞同步</em> 是 Semaphore 等类更好的性能与伸缩性的来源.</p>
+<p><strong>非阻塞算法</strong><br>
+非阻塞算法<em>使用底层的原子机器指令如 compare-and-swap 代替锁</em>来保证数据在并发访问下的完整性, 广泛应用于 OS 和 JVM 中的线程和进程调度、GC 以及实现锁和其它并发数据结构.<br>
+非阻塞算法在设计和实现上更为复杂, 但是带来显著的伸缩性和活跃性优势, 如:</p>
+<ul>
+<li>在不同线程争用数据时不阻塞, 因而大大降低调度开销</li>
+<li>无死锁</li>
+<li>个别线程的出错不会影响其它线程</li>
+</ul>
+<p><strong>原子变量</strong><br>
+非阻塞算法可以方便的使用原子变量来实现. 除了实现非阻塞算法, 原子变量也可以用作 &ldquo;更好的 volatile 变量&rdquo;, 相比 volatile 变量增加了原子更新操作支持.</p>
+<h2 id="锁的缺点">锁的缺点</h2>
+<h3 id="性能损耗">性能损耗</h3>
+<p>锁可以保证操作的原子性, 现代 JVM 对锁做的优化努力包括:</p>
+<ul>
+<li>非争用锁: 完全在 JVM 内部处理, 相当高效</li>
+<li>争用锁
+<ul>
+<li>短时间持锁: 某些 JVM 可能使用自旋锁实现</li>
+<li>长时间持锁: <em>OS 介入挂起线程</em></li>
+</ul>
+</li>
+</ul>
+<p>线程的挂起会带来上下文切换的开销 (CPU 处理、缓存失效). 如果存在需要持锁的细粒度操作, 程序的性能和伸缩性会受到很大影响.</p>
+<p>volatile 变量比锁更为轻量, 因为不会引起上下文切换. 但缺点是不能用来构造原子性的复合操作.</p>
+<blockquote>
+<p>理论上说, 可以完全依赖 volatile 变量的语义实现互斥, 但其效率完全不实用.</p>
+</blockquote>
+<h3 id="活跃性问题">活跃性问题</h3>
+<p>如果一个线程持锁时间过长, 其它等待获取锁的线程都无法继续. 特别的, 如果一个高优先级线程等待的锁由一个低优先级的线程持有, 称为优先级倒置 (priority inversion). 如果某个线程因为死锁等错误永久性的不释放锁, 会导致其它等待锁的线程也无法继续执行任务.</p>
+<h2 id="硬件对并发的支持">硬件对并发的支持</h2>
+<p><strong>并发访问的两种思路</strong></p>
+<ul>
+<li>悲观: 互斥锁, 假设最坏的情况会发生, 只有获取到保证不会被干扰才继续执行.</li>
+<li>乐观: 继续执行更新, 期望可以不被打断顺利完成, 如果失败则重试. 这种技术依赖于碰撞检测 (collision detection) 来判断操作是否成功.</li>
+</ul>
+<p>细粒度的操作适合采用乐观的方式实现.</p>
+<p><strong>特殊指令</strong><br>
+为并发操作设计的处理器提供了特殊的指令来管理共享数据访问. 早期处理器支持原子的 test-and-set、fetch-and-increment、swap 指令, 可以用来实现互斥, 进而实现更复杂的并发数据结构. 如今, 几乎每个现代处理器都有某种形式的原子 read-modify-write (RMW) 指令, 比如 compare-and-swap、load-link/store-conditional. OS 和 JVM 使用这些指令来实现锁和并发数据结构, 但在 Java 5.0 之前, Java 类不能直接使用它们.</p>
+<h3 id="compare-and-swap">Compare and swap</h3>
+<p>多数处理器 (包括 IA32 和 Spark) 的方式是实现 compare-and-swap (CAS) 或等价的指令.</p>
+<p><strong>语义和使用模式</strong><br>
+CAS 指令用实现了以下语义, 但是执行是原子的 (代码不代表实现方式):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">cas</span>(<span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>value, <span style="color:#66d9ef">int</span> expectedValue, <span style="color:#66d9ef">int</span> newValue) {
+    <span style="color:#66d9ef">int</span> oldValue <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>value;
+    <span style="color:#66d9ef">if</span> (oldValue <span style="color:#f92672">==</span> expectedValue)
+        <span style="color:#f92672">*</span>value <span style="color:#f92672">=</span> newValue;
+    <span style="color:#66d9ef">return</span> oldValue;
+}
+</code></pre></div><p>CAS 一般的使用模式是, 先读取变量 V 的值 A, 根据 A 计算出新的值 B, 然后使用 CAS 将 V 的值从 A 修改到 B, 如果返回的是 A, 说明修改成功. 当多个线程通过 CAS 更新数据值时, 有的线程会失败, 但失败线程可以通过返回值检测到失败, 并且不会阻塞. 失败线程可以自由的选择处理方式: 重试、采取一些别的策略, 或者不处理. 这种灵活性消除了很多与锁相关的活跃性风险 (尽管仍然存在<a href="/notes/jcip/jcip-10-avoid-liveness-hazards/#活锁">活锁</a>的可能性).</p>
+<p><strong>和 synchronized 的比较</strong><br>
+即使是无争用锁的代价也要大于 CAS 指令. 如果采用循环重试的策略, 虽然程序控制逻辑比锁复杂, 在低中频率的争用存在时, 因为 CAS 多数会成功, 硬件的预测执行优化可以很好的抵消控制逻辑的开销. 事实上, 虽然在程序中 synchronized 语法更加紧凑, 但其实现却并不简单, 涉及到至少一次 CAS 指令, 外加 OS 级别的锁、线程挂起、上下文切换等, 从整体来看, CAS 方法的代码路径要更短.<br>
+两者在程序上的差别在于, synchronized 将 CAS 放在了程序之外. 在程序中直接使用 CAS 更加灵活的避免了额外操作, 但缺点是, 调用这必须自行处理争用.</p>
+<h3 id="jvm-对-cas-的支持">JVM 对 CAS 的支持</h3>
+<p>Java 5.0 以前, 不使用 native 代码无法实现调用.<br>
+Java 5.0 为 int、long 和对象引用暴露了 CAS 支持, JVM 使用最高效的方式来实现这些支持, 在支持 CAS 指令的平台上內联为适当的机器指令, 在不支持 CAS 的平台上使用自旋锁实现.<br>
+原子变量类 java.util.concurrent.atomic.AtomicXXX 使用 JVM 的 CAS 支持实现, 为数字和引用类型提供高效的 CAS 操作支持, java.util.concurrent 包中的大多数类都直接或间接使用这些类实现.</p>
+<h2 id="原子变量类型">原子变量类型</h2>
+<p>原子变量是在多处理器系统上实现高性能并发程序的关键. 原子变量将争用限制到一个变量, 这是可能的最小粒度了. 非争用的原子变量通常比非争用锁快, 争用情况下则显著快于锁. 基于原子变量的算法比基于锁的算法更容易无延迟的继续执行, 并且遇到争用时恢复更快.<br>
+原子变量类型共有 12 个, 分为 4 类:</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基本类型</td>
+<td>AtomicInteger<br>AtomicLong<br>AtomicBoolean<br>AtomicReference</td>
+</tr>
+<tr>
+<td>数组类型</td>
+<td>AtomicIntegerArray<br>AtomicLongArray<br>AtomicReferenceArray</td>
+</tr>
+<tr>
+<td>字段更新</td>
+<td>AtomicIntegerFielderUpdater<br>AtomicLongFieldUpdater<br>AtomicReferenceFieldUpdater</td>
+</tr>
+<tr>
+<td>复合变量</td>
+<td>AtomicMarkableReference<br>AtomicStampedReference</td>
+</tr>
+</tbody>
+</table>
+<p>基本类型的原子变量继承了 Number, 但没有继承封装类型 (封装类型是不可变的, 原子变量是可变的) , 也没有覆盖 <code>hashCode</code> 和 <code>equals</code> 方法. 像所有的可变对象一样, 原子变量不适合作为 Map 的 key.</p>
+<h3 id="作为-更好的-volatile">作为 &ldquo;更好的 volatile&rdquo;</h3>
+<p>原子变量类型提供了与 volatile 变量相同的内存可见性保证.<br>
+对于一个变量需要 check-then-act 复合操作的情况, 使用原子变量类型可以提供更轻量的实现.<br>
+如果多个变量受不变式的约束, 可以用 &ldquo;AtomicReference + 不可变对象&rdquo; 的模式处理.</p>
+<h3 id="性能比较">性能比较</h3>
+<p>观察发现, 在中低程度争用存在时, 原子变量的性能优于锁, 但更高程度的争用存在时, 锁的性能优于原子变量. 这是因为锁在高争用的情况下会使线程挂起, 从而降低 CPU 使用和共享内存总线上的流量. 但是基于重试的原子变量算法却会进一步增加争用.<br>
+但在多数实际应用存在的典型的争用程度下, 原子变量能提供更好的伸缩性.<br>
+在单 CPU 上原子变量同样优于锁的性能, 因为 CAS 总是成功.</p>
+<h2 id="非阻塞算法">非阻塞算法</h2>
+<h3 id="定义和实现">定义和实现</h3>
+<p>在一个算法中, 如果一个线程的错误或挂起不会导致其它线程的错误或挂起, 则说这个算法是<em>非阻塞的</em> (<em>nonblocking</em>). 如果每一步, 都有某个线程可以向前执行, 就说这个算法是<em>无锁的</em> (<em>lock-free</em>).<br>
+只使用 CAS 协调线程的算法, 如果正确构造, 可以即是非阻塞的, 又是无锁的.<br>
+无锁算法同时还避免了死锁和优先级倒置的问题 (可能有饥饿、活锁问题).</p>
+<p>无锁算法相比其基于锁的对应算法有相当的复杂性. 创建无锁算法的关键是设法将原子性变化限制在单个变量, 同时维护数据一致性.<br>
+常用的集合类如栈、链表、Hash 表等, 都已经有设计良好的非阻塞算法.</p>
+<h3 id="原子字段更新">原子字段更新</h3>
+<p>AtomicXXXFieldUpdater 基于反射原子更新字段值. 与普通原子变量的区别是, 普通的设置字段值操作与原子操作不互为原子操作. 并且其实例不绑定到某一个对象, 而是可以对目标类的所有实例进行操作.<br>
+当需要保持原始类的结构又希望利用原子变量优点时可以使用原子字段更新.</p>
+<h3 id="aba-问题">ABA 问题</h3>
+<p>CAS 执行的检查是: <em>V 的值是否还是 A?</em> 但在某些情况下, 算法关心的是: 自从上次观察到 V 的值是 A 之后, <em>V 的值有没有改变过?</em> 在记录原值和执行 CAS 之间, V 的值经历 A -&gt; B -&gt; A 的变化, 对多数情况来说是没关系的, 但对有些算法应该算作变化并重试.<br>
+ABA 问题在包含对象复用机制的算法中可能出现. 例如, 一个自行实现内存管理的链表, 先删除再添加, 有可能节点的地址没有变化, 但应该认为链表发生了变化.<br>
+ABA 问题可以通过给每一次改变的值附加一个版本来解决, AtomicStampedReference 支持原子地更新一个引用-整数对, 可以用来实现这种机制. 类似的, AtomicMarkedReference 可以原子地更新引用-boolean对, 可以在不将节点移除出链表的情况下将其标识为已删除.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-14-custom-synchronizers/"><span class="li">&rarr;</span>[JCIP] 14.自定义 Synchronizers</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

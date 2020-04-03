@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Fri, 03 Apr 2020 09:09:45 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 03 Apr 2020 17:36:39 +0800</lastBuildDate>
     
         <atom:link href="/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 15.原子变量和非阻塞同步</title>
+      <link>/notes/jcip/jcip-15-atomic-nonblocking/</link>
+      <pubDate>Fri, 03 Apr 2020 17:36:39 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-15-atomic-nonblocking/</guid>
+      <description>原子变量和非阻塞同步 是 Semaphore 等类更好的性能与伸缩性的来源. 非阻塞算法 非阻塞算法使用底层的原子机器指令如 compare-and-swap 代替锁来保证数据在并发访问下的完整性, 广</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 14.自定义 Synchronizers</title>
