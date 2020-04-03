@@ -7,10 +7,30 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Thu, 02 Apr 2020 14:13:11 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 03 Apr 2020 09:09:45 +0800</lastBuildDate>
     
         <atom:link href="/categories/%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 14.自定义 Synchronizers</title>
+      <link>/notes/jcip/jcip-14-custom-synchronizers/</link>
+      <pubDate>Fri, 03 Apr 2020 09:09:45 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-14-custom-synchronizers/</guid>
+      <description>Java 类库提供了数个有状态依赖的类 (state-dependent classes), 这些类的某些操作操作要求满足基于状态的前置条件 (state-based preconditions). 如 FutureTask、Semaphore、Blocki</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 13.显式锁</title>
+      <link>/notes/jcip/jcip-13-explicit-locks/</link>
+      <pubDate>Thu, 02 Apr 2020 21:15:03 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-13-explicit-locks/</guid>
+      <description>Lock 和 ReentrantLock Lock 接口定义了一些抽象锁操作. 与内置锁相比, Lock 接口提供了多个版本不同特性的锁获取方法, 并且所有的锁与解锁都是显式的. Lock 的实现必须提供与内</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 11.性能和伸缩性</title>

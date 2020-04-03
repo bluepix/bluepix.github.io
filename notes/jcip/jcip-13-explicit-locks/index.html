@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 13.显式锁&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#lock-和-reentrantlock">Lock 和 ReentrantLock</a></li>
+    <li><a href="#性能考虑">性能考虑</a></li>
+    <li><a href="#公平性">公平性</a></li>
+    <li><a href="#选择-synchronized-和-reentrantlock">选择: synchronized 和 ReentrantLock</a></li>
+    <li><a href="#读写锁">读写锁</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 13.显式锁</h1><p class="article date">2020-04-02</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#lock-和-reentrantlock">Lock 和 ReentrantLock</a></li>
+    <li><a href="#性能考虑">性能考虑</a></li>
+    <li><a href="#公平性">公平性</a></li>
+    <li><a href="#选择-synchronized-和-reentrantlock">选择: synchronized 和 ReentrantLock</a></li>
+    <li><a href="#读写锁">读写锁</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="lock-和-reentrantlock">Lock 和 ReentrantLock</h2>
+<p>Lock 接口定义了一些抽象锁操作. 与内置锁相比, Lock 接口提供了多个版本不同特性的锁获取方法, 并且所有的锁与解锁都是显式的. Lock 的实现必须提供与内置锁一致的内存可见性语义, 但可以选择不同的锁语义、调度算法、顺序保证和性能特点.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Lock</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">lockInterruptibly</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryLock</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">tryLock</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> timeout<span style="color:#f92672">,</span> TimeUnit unit<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">unlock</span><span style="color:#f92672">();</span>
+    Condition <span style="color:#a6e22e">newCondition</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>ReentrantLock 实现了 Lock, 提供了内置锁不具有的一些高级特性.</p>
+<ul>
+<li>获取 ReentrantLock 在内存语义上相当于进入 synchronized 块.</li>
+<li>释放 ReentrantLock 相当于离开 synchronized 块.</li>
+<li>和内置锁一样是可重入的.</li>
+<li>在锁不可及时提供了比内置锁更多灵活性</li>
+</ul>
+<p>内置锁的局限</p>
+<ul>
+<li>无法中断正在等待获取锁的线程</li>
+<li>获取带超时的获取锁</li>
+<li>必须在同一个代码块中获取和释放锁</li>
+</ul>
+<p>Lock 解决了以上问题. <code>tryLock</code> 可以代替内置锁可以避免死锁. 带超时的 <code>tryLock</code> 可以用于实现有时间限制的活动, 此方法和 <code>lockInterruptibly</code> 都可以用于需要响应中断的活动.<br>
+Lock 允许非块结构的锁, 为实现某些算法提供了更大灵活性.</p>
+<p>Lock 的一个缺点是不会在代码离开受保护代码块时自动清理锁, 一般要在 finally 块中执行 (使用任何形式的锁, 包括内置锁, 都应当考虑异常的影响).</p>
+<h2 id="性能考虑">性能考虑</h2>
+<p>ReentrantLock 在 Java 5.0 刚刚加入的时候, 有争用性能远远优于内置锁, 提供了更好的伸缩性. 但到了 Java 6.0 时两者表现已经差不多.<br>
+性能是快速变化的目标, 性能测量结果可能很快过时.</p>
+<h2 id="公平性">公平性</h2>
+<p>ReentrantLock 提供了两种公平性 (Fairness) 选项. 不公平锁 (unfair lock, 默认) 和公平锁 (fair lock).</p>
+<table>
+<thead>
+<tr>
+<th>公平性</th>
+<th>特点</th>
+<th>排队</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>公平锁</td>
+<td>保证请求锁的线程按照请求锁的先后顺序获取锁</td>
+<td>当一个线程请求锁时, 如果锁已经被其它线程持有, 或者有其它线程在排队等待, 则排队等待</td>
+</tr>
+<tr>
+<td>不公平锁</td>
+<td>允许 &ldquo;闯入&rdquo; (barging), 如果一个线程请求锁的时候, 锁恰好可以获取, 这个线程可以越过先于它请求锁的线程获取到锁.</td>
+<td>只有锁当前被其它线程持有时排队</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>tryLock 即使是公平锁也会 barge</p>
+</blockquote>
+<p>因为需要挂起和恢复线程的开销, 所得公平性有明显的性能代价. 实践中, 统计性公平 (保证等待的线程最终会获取到锁) 一般是最够的, 并且开销远远低于严格的公平锁. 有一些算法的正确性依赖公平性, 但属于少数特殊情况.</p>
+<p><em>除非确实需要, 不要为了公平性付出性能代价.</em>
+内置锁和默认的 ReentrantLock 一样不提供公平性保证. 但几乎对所有情况, 多数锁实现的统计性公平保证是足够好的.</p>
+<h2 id="选择-synchronized-和-reentrantlock">选择: synchronized 和 ReentrantLock</h2>
+<p>为什么不用 ReentrantLock 代替内置锁?</p>
+<ul>
+<li>内置锁的表示熟悉、紧凑</li>
+<li>很多现有程序使用内置锁, 混用两者造成困惑和错误</li>
+<li>ReentrantLock 有危险性, 如果忘记在 finally 中释放锁就会留下严重隐患</li>
+</ul>
+<p>ReentrantLock 是一个高级工具, 用于内置锁不能满足的情况. 在需要它的高级特性 (带超时的、询问式的、可中断的锁、 公平锁、非块结构锁) 时再使用它, 否则应优先使用 synchronized.
+进一步的性能优化也可能倾向于 synchronized, 因为它集成在 JVM 内部, 可以执行很多库中的类无法支持的优化.</p>
+<h2 id="读写锁">读写锁</h2>
+<p><strong>概念</strong><br>
+读写锁的思想是: 认为互斥是保守的维护数据完整性的方式, 非必要的限制了并发性. 对于读多写少的场景, 保留读-写和写-写之间的互斥, 放松读-读之间的互斥, 是没有问题的.<br>
+读写锁提供了两个锁对象, 线程在修改状态之前必须先获取写锁, 读状态之前先获取读锁. 读写锁允许同时有多个读线程, 但只能有一个写线程.</p>
+<p><strong>接口</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ReadWriteLock</span> <span style="color:#f92672">{</span>
+    Lock <span style="color:#a6e22e">readLock</span><span style="color:#f92672">();</span>
+    Lock <span style="color:#a6e22e">writeLock</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>和 Lock 一样, ReadWriteLock 没有限制实现方式, 实现可以呈现不同的性能、调度保证、获取优先顺序、公平性等.</p>
+<p><strong>性能</strong><br>
+读写锁为特定场景优化, 实践中, 在多处理器系统上访问访问读多写少的数据结构, 读写锁可提高性能, 在其它场景下, 由于其额外的复杂性, 相比互斥锁稍差一点.<br>
+结果应以测试为准, 如果证明性能下降, 读写锁的形式可以方便的替换为互斥锁.</p>
+<p><strong>实现考虑</strong></p>
+<ul>
+<li>释放优先级. 当一个线程释放写锁, 同时有读线程和写线程在排队, 谁优先? 读、写还是先请求的?</li>
+<li>读闯入. 如果读线程持有锁, 有写线程在等待, 新到达的读线程是否可以直接获取访问, 还是要在写线程后面排队? 允许读闯入可以提高并发, 但可能导致写线程饿死.</li>
+<li>重入性. 读、写锁是否可重入?</li>
+<li>降级. 如果线程持有写锁, 可否在不释放的情况下获取读锁? 即允许在不让其它写线程修改状态的情况下降级为读锁.</li>
+<li>升级. 读锁是否可以优先升级为写锁? 多数实现不支持升级, 因为有死锁风险 (如果有两个线程都试图升级, 两者都不会释放读锁).</li>
+</ul>
+<p><strong>ReentrantReadWriteLock</strong></p>
+<ul>
+<li>读、写锁都是可是可重入的</li>
+<li>可配置公平性. 公平则不允许读闯入, 非公平锁获取顺序未定义.</li>
+<li>允许写锁降级</li>
+<li>不允许读锁升级</li>
+</ul>
+<p><strong>适用</strong><br>
+当锁一般被持有相当唱的时间且多数操作是读操作时, 读写锁可以提高并发性.<br>
+对于 Map 数据结构来说, ConcurrentHashMap 已经提供了非常好的并发性能, 但如果需要使用其它类型的 Map 实现, 且满足以上条件可以考虑适用读写锁.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-14-custom-synchronizers/"><span class="li">&larr;</span>[JCIP] 14.自定义 Synchronizers</a></p><p><a class="link" href="/notes/jcip/jcip-11-perf-n-scal/"><span class="li">&rarr;</span>[JCIP] 11.性能和伸缩性</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

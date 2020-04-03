@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 11.性能和伸缩性&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.c6c4d0c6ec6e4b2427f0cdf31d5058ec1f4afd5d6e1e52e0f1f9abe05f2b8246f7ccd7824f8cd9fc9f58787cdfa3557f.css" integrity="sha384-xsTQxuxuSyQn8M3zHVBY7B9K/V1uHlLg8fmr4F8rgkb3zNeCT4zZ/J9YeHzfo1V/"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 11.性能和伸缩性&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
 <script>
     window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
 </script>
@@ -213,7 +213,7 @@ CocurrentHashMap 通过给每个分段维护大小来解决这一问题. 如果�
 <p>例如日志打印, 每个线程直接打印日志改为将日志通过生产者-消费者模型集中到一个线程打印, 虽然工作量没有减少, 但是可以减少阻塞 (原来的 I/O 阻塞转换成了少量锁争用引起的阻塞), 因而减少上下文切换的发生.</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a><a class="tag" href=/tags/%E6%80%A7%E8%83%BD/>性能</a></section><div id="bottom-sticky">
     <a id="gototop"></a>
-</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-10-avoid-liveness-hazards/"><span class="li">&rarr;</span>[JCIP] 10.避免活跃性风险</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-13-explicit-locks/"><span class="li">&larr;</span>[JCIP] 13.显式锁</a></p><p><a class="link" href="/notes/jcip/jcip-10-avoid-liveness-hazards/"><span class="li">&rarr;</span>[JCIP] 10.避免活跃性风险</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
     <p class="copyright">©2020 bluepix</p>
     <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
         target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 

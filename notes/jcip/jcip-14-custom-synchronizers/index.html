@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 14.自定义 Synchronizers&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#管理状态依赖">管理状态依赖</a>
+      <ul>
+        <li><a href="#轮询实现">轮询实现</a></li>
+        <li><a href="#条件队列">条件队列</a></li>
+      </ul>
+    </li>
+    <li><a href="#使用条件队列">使用条件队列</a>
+      <ul>
+        <li><a href="#条件谓词">条件谓词</a></li>
+        <li><a href="#过早唤醒">过早唤醒</a></li>
+        <li><a href="#信号丢失">信号丢失</a></li>
+        <li><a href="#通知">通知</a></li>
+        <li><a href="#子类安全性">子类安全性</a></li>
+        <li><a href="#封装条件队列">封装条件队列</a></li>
+        <li><a href="#进入与退出协议">进入与退出协议</a></li>
+      </ul>
+    </li>
+    <li><a href="#显式条件对象">显式条件对象</a></li>
+    <li><a href="#synchronizer-剖析">Synchronizer 剖析</a></li>
+    <li><a href="#abstractqueuedsynchronizer">AbstractQueuedSynchronizer</a></li>
+    <li><a href="#javautilconcurrent-包中基于-aqs-的-synchronizer-类">java.util.concurrent 包中基于 AQS 的 synchronizer 类</a></li>
+    <li><a href="#如果-aqs-不能满足要求">如果 AQS 不能满足要求</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 14.自定义 Synchronizers</h1><p class="article date">2020-04-03</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#管理状态依赖">管理状态依赖</a>
+      <ul>
+        <li><a href="#轮询实现">轮询实现</a></li>
+        <li><a href="#条件队列">条件队列</a></li>
+      </ul>
+    </li>
+    <li><a href="#使用条件队列">使用条件队列</a>
+      <ul>
+        <li><a href="#条件谓词">条件谓词</a></li>
+        <li><a href="#过早唤醒">过早唤醒</a></li>
+        <li><a href="#信号丢失">信号丢失</a></li>
+        <li><a href="#通知">通知</a></li>
+        <li><a href="#子类安全性">子类安全性</a></li>
+        <li><a href="#封装条件队列">封装条件队列</a></li>
+        <li><a href="#进入与退出协议">进入与退出协议</a></li>
+      </ul>
+    </li>
+    <li><a href="#显式条件对象">显式条件对象</a></li>
+    <li><a href="#synchronizer-剖析">Synchronizer 剖析</a></li>
+    <li><a href="#abstractqueuedsynchronizer">AbstractQueuedSynchronizer</a></li>
+    <li><a href="#javautilconcurrent-包中基于-aqs-的-synchronizer-类">java.util.concurrent 包中基于 AQS 的 synchronizer 类</a></li>
+    <li><a href="#如果-aqs-不能满足要求">如果 AQS 不能满足要求</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<p>Java 类库提供了数个有状态依赖的类 (state-dependent classes), 这些类的某些操作操作要求满足基于状态的前置条件 (state-based preconditions). 如 FutureTask、Semaphore、BlockingQueue 等.<br>
+要构造有状态依赖的类可以有以下方法:</p>
+<ul>
+<li>基于已有的状态依赖类, 这是最简单的方式, 也是允许的情况下推荐的方式</li>
+<li>使用内置的<em>条件队列</em></li>
+<li>使用显式的 Condition 对象</li>
+<li>使用 AbstractQueuedSynchronizer 框架</li>
+</ul>
+<h2 id="管理状态依赖">管理状态依赖</h2>
+<h3 id="轮询实现">轮询实现</h3>
+<p>使用轮询 + sleep 实现, 减少 CPU 消耗和响应速度无法同时满足 (特别的, 不 sleep 的情况称为 busy waiting 或 spin waiting, 会大量消耗 CPU).</p>
+<h3 id="条件队列">条件队列</h3>
+<p>条件队列 (condition queuess) 提供了一种方式, 让一组线程 (称为等待集合 wait set) 可以等待某个条件的满足.</p>
+<p><strong>内置条件队列</strong>
+每个 Java 对象都可以作为条件队列, 条件队列的 API 包含 Object 类的 <code>wait</code>、<code>notify</code>、<code>notfyAll</code> 方法.<br>
+内置条件队列于内置锁紧密联系, 以上任何一个方法的调用都必须持有内置锁调用 (这是因为条件队列机制和状态的检查和修改紧密相关, 而状态的一致性要由内置锁来保证).<br>
+<code>Object.wait</code> 方法释放锁并请求 OS 挂起当前线程 (这是一个原子操作), 允许其它线程修改状态, 唤醒时, 这个方法先获取锁, 然后返回.</p>
+<p>条件队列是轮询 + sleep 实现的一个优化版本, 并没有提供新的功能, 但是 CPU 消耗、响应、上下文切换开销都大大的优化了. (显式的条件队列可以提供公平性设置, 这算是一个额外特性.)</p>
+<h2 id="使用条件队列">使用条件队列</h2>
+<p>由于编译器和平台缺少必要的限制, 条件队列很容易不正确的使用.</p>
+<h3 id="条件谓词">条件谓词</h3>
+<p>使用条件队列的关键是识别对象等待的<em>条件谓词</em> (<em>condition predicates</em>). 条件谓词在 API 中没有示例, 语言规范、JVM 实现也都不能保证其正确使用, 事实上在语言规范或 Javadoc 中根本没有直接提到过它, 但没有它条件队列就无法正常工作.<br>
+<em>条件谓词就是最初导致操作依赖状态的前置条件.</em><br>
+<em>与一个条件队列关联的条件谓词, 以及等待这个条件的操作, 应当写入文档.</em>
+在条件等待中, 条件谓词和 <code>wait</code> 方法、锁之间组成重要的三方关系: 条件谓词牵涉到状态变量, 状态变量由锁保护. 因此, 在检查条件谓词之前必须持锁, 并且锁对象和条件队列对象必须是同一个对象.<br>
+<code>wait</code>  中的线程在唤醒时, 在锁争用中没有特殊的优先权.
+<strong>总结</strong><br>
+每一次对 <code>wait</code> 的调用都隐含关联到某个特定的条件谓词. 当调用针对某个条件谓词的 <code>wait</code>时, 调用线程必须已经持有与条件队列关联的锁, 而这个锁必须同时保护组成条件谓词的状态变量.</p>
+<h3 id="过早唤醒">过早唤醒</h3>
+<p><code>wait</code> 方法返回并不一定代表条件谓词变为 <code>true</code>.</p>
+<ul>
+<li>一个条件队列可以用于多个条件谓词, 当某个线程调用 <code>notifyAll</code> 时, 线程被唤醒, 但这未必代表是它所等待的条件谓词变为 <code>true</code></li>
+<li>还可能存在欺骗唤醒 (spuriously wakeup, 如进程收到信号可能唤醒所有等待中的线程)</li>
+</ul>
+<p>因此, <code>wait</code> 方法总是应该在循环中调用, 每次迭代重新检查条件谓词. 正规的用法如下:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">stateDependentMethod</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">synchronized</span><span style="color:#f92672">(</span>lock<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>conditionPredicate<span style="color:#f92672">())</span> <span style="color:#f92672">{</span>
+            lock<span style="color:#f92672">.</span><span style="color:#a6e22e">wait</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">}</span>
+        <span style="color:#75715e">// 此处条件已满足
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><ul>
+<li>总是要识别出条件谓词</li>
+<li>总是在调用 <code>wait</code> 之前检查条件谓词, 返回后再次检查</li>
+<li>总是在循环中调用 <code>wait</code></li>
+<li>确保组成条件谓词的状态变量有条件队列关联的锁保护</li>
+<li>在调用 <code>wait</code>、<code>notify</code> 和 <code>notifyAll</code> 方法时要持有条件队列关联的锁</li>
+<li>在检查条件谓词之后但对其操作之前, 不要释放锁</li>
+</ul>
+<h3 id="信号丢失">信号丢失</h3>
+<p><strong>信号丢失 (missed signals)</strong> 是有一种活跃性问题: 线程阻塞等待一个已经满足的条件, 但是没有机会再次检查条件谓词. 这个问题源于代码错误, 比如在调用 <code>wait</code> 之前没有检查条件谓词. 遵守上述规则可以避免这种问题.</p>
+<h3 id="通知">通知</h3>
+<p>只要有线程等待条件满足, 要确保有另一个线程在条件满足时执行通知操作. 有两个方法执行通知:</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>notify</code></td>
+<td>从在此条件队列上等待的线程中选取一个唤醒</td>
+</tr>
+<tr>
+<td><code>notifyAll</code></td>
+<td>唤醒所有在此条件队列中等待的线程</td>
+</tr>
+</tbody>
+</table>
+<p>因为被唤醒的线程必须要获取到锁才能从 <code>wait</code> 返回, 通知线程应该尽快释放锁.<br>
+因为一个条件队列可能管理多个条件谓词, <code>notify</code> 可能会导致信号丢失问题. 因此应优先使用 <code>notifyAll</code>, 只有两个条件满足的情况下可以使用 <code>notify</code>:</p>
+<ul>
+<li>一致等待者 (Uniform waiters). 只有一个条件谓词关联到条件队列, 并且所有线程在 <code>wait</code> 返回后执行的逻辑一致.</li>
+<li>单进单出 (One-in, One-out). 每次通知最多允许一个线程继续.</li>
+</ul>
+<p><code>notifyAll</code> 相比单一通知 <code>notify</code> 有一些性能代价, 尤其是等待线程多的时候, 但不易出错. 另外可以只有在条件谓词的值发生变化时通知, 称为 &ldquo;条件通知&rdquo; (conditional notify), 同样可能能够降低部分开销, 但增加了复杂性. 应遵守先对再快的原则, 避免使用条件通知和单一通知.</p>
+<h3 id="子类安全性">子类安全性</h3>
+<p>使用条件通知或单一通知会引入约束使得派生子类更复杂.
+<em>一个状态依赖类应当, 要么向子类完全暴露和文档记录其等待和通知协议, 要么完全禁止子类参与协议.</em>
+暴露给子类的至少应该包括条件队列和锁, 并文档记录条件谓词和同步策略, 有时还需要暴露相关状态变量.</p>
+<h3 id="封装条件队列">封装条件队列</h3>
+<p>能够封装条件队列是最好的, 可以避免外部代码意外的违反等待和通知协议. 但和常用的使用内置锁保护状态变量的模式冲突.</p>
+<h3 id="进入与退出协议">进入与退出协议</h3>
+<p>对于任何状态依赖操作和可能影响其它操作依赖的状态的操作, 可以定义并文档记录进入与退出协议:</p>
+<ul>
+<li>进入 (Entry) 协议: 即条件谓词</li>
+<li>退出 (Exit) 协议: 检查任何操作修改的状态变量, 判断是否可能引起某些等待中的条件满足, 如果是则通知相关的条件队列.</li>
+</ul>
+<h2 id="显式条件对象">显式条件对象</h2>
+<p>内置条件队列的局限</p>
+<ul>
+<li>每个内置锁只有一个关联的内置条件队列, 因此有时不得不将其用于管理多个条件谓词</li>
+<li>常用的锁模式会暴露条件队列, 无法封装</li>
+</ul>
+<p>Condition 接口和 Lock 接口一起提供了更大的灵活性. 使用 Lock 对象的 <code>newCondition</code> 方法可以创建一个关联的 Condition 对象. 与内置锁不同, 同一个 Lock 对象可以创建多个 Condition 对象. Condition 对象继承了创建它的 Lock 对象的公平性, 对于公平锁, 执行 <code>await</code> 方法的线程按照 FIFO 顺序释放.
+相比内置的条件队列 Condition 也提供了更多高级特性.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Condition</span> <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">await</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">awaitUninterruptibly</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">awaitNanos</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> nanosTimeout<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">await</span><span style="color:#f92672">(</span><span style="color:#66d9ef">long</span> time<span style="color:#f92672">,</span> TimeUnit unit<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">awaitUntil</span><span style="color:#f92672">(</span>Date deadline<span style="color:#f92672">)</span> <span style="color:#66d9ef">throws</span> InterruptedException<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">signal</span><span style="color:#f92672">();</span>
+    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">signalAll</span><span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><blockquote>
+<p><em>注意:</em> Condition 中与内置条件队列 <code>wait</code>、<code>notify</code> 和 <code>notifyAll</code> 方法对应的分别是 <code>await</code>、<code>signal</code> 和 <code>signalAll</code>, 但因为 Condition 继承自 Object, 它也拥有 <code>wait</code>、<code>notify</code> 和 <code>notifyAll</code> 方法, 在调用时要避免混淆.</p>
+</blockquote>
+<p>选择内置条件队列和 Condition 的原则与选取锁类似, 优先使用内置版本, 除非需要 Condition 提供的高级特性或者已经选择使用 Lock.</p>
+<h2 id="synchronizer-剖析">Synchronizer 剖析</h2>
+<p>ReentrantLock 和 Semaphore (以及其它 synchronizer 对象) 有很多共同点:</p>
+<ul>
+<li>允许线程通过、阻塞线程、拒绝线程通过</li>
+<li>允许可中断、不可中断、带超时的等待</li>
+<li>可配置等待线程排队的公平性</li>
+</ul>
+<p>当然, 可以想象这些类可以互相基于对方实现, 实际上, 它们全都使用共同的一个基类实现: <strong>AbstractQueuedSynchronizer (AQS)</strong> (某些类在后续的 Java 版本中替换成了无锁实现). AQS 处理了很多 synchronizer 的实现细节. 使用 AQS 来实现 synchronizer 类主要有两个好处:</p>
+<ul>
+<li>避免自行处理很多实现细节</li>
+<li>伸缩性更好, 使用 AQS 构建的 synchronizer 只有一个可能阻塞的点, 减少了上下文切换开销.</li>
+</ul>
+<h2 id="abstractqueuedsynchronizer">AbstractQueuedSynchronizer</h2>
+<p>开发者很少需要自定义 synchronizer, 因为类库提供的标准实现已经基本覆盖了大多数需求. 但了解一下其实现是有益的.<br>
+基于 AQS 的 synchronizer 对象的两个基本操作是某种获取 (acquire) 和释放 (release) 的变体 (是否允许中断, 是否互斥等), 获取操作是依赖于状态的阻塞操作, 释放操作不阻塞, 可能导致某些阻塞在获取的线程继续. 获取、释放操作的语义由子类定义.
+AQS 维护了一个原子的整型的状态, 状态的意义由子类定义, 子类可以通过 <code>getState</code>、<code>setState</code>、<code>compareAndSetState</code> 维护同步状态. 子类可以维护自己的状态变量.</p>
+<p>总体来看, AQS 的获取与释放操作形式如下:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">boolean</span> <span style="color:#a6e22e">aquire</span><span style="color:#f92672">()</span> <span style="color:#66d9ef">throws</span> InterruptedException <span style="color:#f92672">{</span>
+    <span style="color:#66d9ef">while</span> <span style="color:#f92672">(</span>state does not acquire<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>blocking acquisition requested<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+            enqueue current thuread <span style="color:#66d9ef">if</span> not already queued
+            block current thread
+        <span style="color:#f92672">}</span>
+        <span style="color:#66d9ef">else</span>
+            <span style="color:#66d9ef">return</span> failure
+    <span style="color:#f92672">}</span>
+    possibly updata synchronization state
+    dequeue thread <span style="color:#66d9ef">if</span> it was queued
+    <span style="color:#66d9ef">return</span> success
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">release</span><span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+    update synchronization state
+    <span style="color:#a6e22e">if</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">new</span> state may permit a blocked thread to acquire<span style="color:#f92672">)</span>
+        unblock one or more queued threads
+<span style="color:#f92672">}</span>
+</code></pre></div><p>上面伪代码描述的过程一部分实现在 AQS 类中, 有一部分由子类实现.
+获取操作可能是互斥的或非互斥的. 获取操作分两步, 第一步根据当前状态判断是否允许当前线程获取, 若允许, 当前线程可继续, 否则阻塞或返回失败. 第二步, 如果获取操作成功会影响其它线程能否获取, 则可能需要修改状态来反应这一点.<br>
+实现互斥型 synchronizer 的子类需要实现 <code>tryAcquire</code>、<code>tryRelease</code> 和 <code>isHeldExclusively</code>, 实现共享型 (非互斥) synchronizer 的子类需要实现 <code>tryAcquireShared</code>、<code>tryReleaseShared</code>. AQS 的 <code>acquire</code>、<code>release</code>、<code>acquireShared</code> 和 <code>releaseShared</code> 方法调用子类中的 try- 版本方法来判断线程是否可以继续. 子类通过 <code>getState</code>、<code>setState</code>、<code>compareAndSetState</code> 方法, 根据要实现的获取和释放语义, 检查和更新同步状态, 并通过返回值通知 AQS 获取或释放的结果.<br>
+例如, <code>tryAcquireShared</code> 方法用返回负值表示获取失败, 返回 0 表示互斥获取成功, 返回正值表示非互斥获取成功. <code>tryRelease</code> 和 <code>tryReleaseShared</code> 返回 <code>true</code> 表示其它等待中的线程可以尝试获取.<br>
+AQS 同时也提供了构造条件变量的机制.</p>
+<p>类库中的 Synchronizer 都没有直接继承 AQS 类, 而是使用组合的方式, 将其子类作为内部类, 代理同步功能.</p>
+<h2 id="javautilconcurrent-包中基于-aqs-的-synchronizer-类">java.util.concurrent 包中基于 AQS 的 synchronizer 类</h2>
+<p>ReentrantLock, FutureTask, Semaphore, CountDownLatch &hellip;
+具体实现可参看代码, 注意这些类的实现可能随着 Java 的版本变化</p>
+<h2 id="如果-aqs-不能满足要求">如果 AQS 不能满足要求</h2>
+<p>根据 AQS 的文档, 对依赖 int 型状态、获取和释放操作、FIFO 队列的 synchronizer 需求, AQS 提供了高效、可伸缩的基础. 如果这些还不够, 可以使用原子变量、自定义的队列、LockSupport 提供的阻塞支持自行实现.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-13-explicit-locks/"><span class="li">&rarr;</span>[JCIP] 13.显式锁</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>
