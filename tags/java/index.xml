@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Fri, 03 Apr 2020 17:36:39 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 03 Apr 2020 23:21:47 +0800</lastBuildDate>
     
         <atom:link href="/tags/java/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[JCIP] 16.Java 内存模型</title>
+      <link>/notes/jcip/jcip-16-jmm/</link>
+      <pubDate>Fri, 03 Apr 2020 23:21:47 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-16-jmm/</guid>
+      <description>什么是内存模型 乱序执行 乱序 (out of order) 执行来源于编译器、运行时和硬件的优化, 例如: 编译器可能产生与程序定义顺序不同的指令序列 可能将变量保存在寄存器</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 15.原子变量和非阻塞同步</title>

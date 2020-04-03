@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 16.Java 内存模型&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是内存模型">什么是内存模型</a>
+      <ul>
+        <li><a href="#平台内存模型">平台内存模型</a></li>
+        <li><a href="#重排序">重排序</a></li>
+        <li><a href="#jmm-简介">JMM 简介</a></li>
+        <li><a href="#假借同步">假借同步</a></li>
+      </ul>
+    </li>
+    <li><a href="#公布">公布</a>
+      <ul>
+        <li><a href="#不安全公布">不安全公布</a></li>
+        <li><a href="#安全公布">安全公布</a></li>
+        <li><a href="#dcl">DCL</a></li>
+      </ul>
+    </li>
+    <li><a href="#初始化安全性">初始化安全性</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 16.Java 内存模型</h1><p class="article date">2020-04-03</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是内存模型">什么是内存模型</a>
+      <ul>
+        <li><a href="#平台内存模型">平台内存模型</a></li>
+        <li><a href="#重排序">重排序</a></li>
+        <li><a href="#jmm-简介">JMM 简介</a></li>
+        <li><a href="#假借同步">假借同步</a></li>
+      </ul>
+    </li>
+    <li><a href="#公布">公布</a>
+      <ul>
+        <li><a href="#不安全公布">不安全公布</a></li>
+        <li><a href="#安全公布">安全公布</a></li>
+        <li><a href="#dcl">DCL</a></li>
+      </ul>
+    </li>
+    <li><a href="#初始化安全性">初始化安全性</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="什么是内存模型">什么是内存模型</h2>
+<p><strong>乱序执行</strong><br>
+乱序 (out of order) 执行来源于编译器、运行时和硬件的优化, 例如:</p>
+<ul>
+<li>编译器可能产生与程序定义顺序不同的指令序列</li>
+<li>可能将变量保存在寄存器而非内存中</li>
+<li>处理器可能并行或乱序执行指令</li>
+<li>缓存可能修改写操作提交到内存的顺序</li>
+<li>保存在处理器本地缓存的值可能对其它处理器不可见</li>
+</ul>
+<p>在没有必要同步的情况下, 这些优化可能导致内存操作对其他线程不能及时可见甚至永远不可见.</p>
+<p>在单线程环境中, 这些优化对程序来说都是透明的. JLS 要求 JVM 实现保证线程内的 as-if-serial 语义, 即程序执行的结果与按程序顺序执行相同. 但对于多线程程序来说, 保持顺序一致性会带来很大内存开销. 实际上, 线程多数时候在处理自己的事务, 保证整体的执行顺序并无必要, 只有发生线程间操作时才有协调的必要. 因此 JVM 将识别协调多线程需求的任务交给了程序.<br>
+JMM 定义了 JVM 需要提供的关于内存写入对每个线程何时可见的最低保证, 其设计原则是平衡程序设计和编写的方便与在各个流行处理器架构上实现高效 JVM 的需求.</p>
+<h3 id="平台内存模型">平台内存模型</h3>
+<p>处理器架构提供不同的缓存一致性协议, 有些是很弱的, 仅仅保证修改最终对其它线程可见. OS、运行时、编译器以及程序要弥合硬件提供的特性和程序所要求的特性之间的差距.<br>
+要求缓存强一致性的代价很高, 因此一般会做不同程度的松弛, <em>架构的内存模型告诉程序内存系统提供了什么样的保证, 并定义了特殊的指令 (称为内存屏障 memory barrier 或者 fence) 以在需要共享数据时协调访问数据.</em><br>
+<em>Java 提供了自己的内存模型, 以向开发者隐藏不同平台架构的内存模型, 平台内存模型和 JMM 之间的差别由 JVM 来处理.</em></p>
+<p>最简单直观的内存模型是顺序一致模型, 要求所有线程的所有操作如同在一个统一的顺序序列中执行. 现代处理器都不提供顺序一致保证, JVM 也一样. 因此现代处理器运行多线程程序可能表现出令人诧异的行为, 除非程序使用内存屏障来协调多线程的内存访问. Java 不要求程序直接插入内存屏障, 只需要识别出对共享数据的访问, 并用同步保护.</p>
+<h3 id="重排序">重排序</h3>
+<p>任何导致操作执行延迟或看上去乱序执行的原因, 可以统一称之为重排序 (reordering).<br>
+每个线程内部没有数据依赖关系的操作可能会乱序执行, 在没有同步的情况下, 多线程程序非常难以推导, 使用同步禁止编译器、运行时和硬件对内存操作重排序可以简化程序的推导.</p>
+<h3 id="jmm-简介">JMM 简介</h3>
+<dl>
+<dt>操作 (actions)</dt>
+<dd>读、写、获取锁、释放锁、开始线程、观察到线程结束</dd>
+<dt>Happens-before 关系</dt>
+<dd>定义在所有内存操作上的偏序关系. 要保证操作 B 能够观察到操作 A 的结果, 则必须有 A $\xrightarrow{hb}$ B. 没有 happens-before 关系的操作可以任意重排序.</dd>
+<dt>数据竞争 (data race)</dt>
+<dd>两个线程的操作访问同一个共享数据, 至少有一个是写操作, 且两个操作直接没有 happens-before 关系.</dd>
+<dt>正确同步程序 (correctly synchronized program)</dt>
+<dd>在顺序一致执行的情况下没有数据竞争的程序. 正确同步程序在所有的执行中都表现出顺序一致性.</dd>
+</dl>
+<p>Happens-before 规则包括</p>
+<ul>
+<li>程序顺序规则. 同一个线程上在程序中先出现的操作先发生.</li>
+<li>Monitor 锁规则. 对一个锁的 unlock, 先行发生于后续的所有 lock.</li>
+<li>Volatile 变量规则. 对 volatile 变量的写操作, 先行发生于后续所有的读操作.</li>
+<li>线程开始规则. 启动一个线程的操作先行发生于所有此线程执行的操作.</li>
+<li>线程终止规则. 线程上的每一个操作, 先行发生于任何检测到此线程已终止的操作.</li>
+<li>中断规则. 线程对其它线程发出中断请求的操作, 先行发生与目标线程检测到中断的操作.</li>
+<li>Finalizer 规则. 构造方法的结束先行发生于 finalizer 的开始.</li>
+<li>传递性规则. 若 A $\xrightarrow{hb}$ B 且 B $\xrightarrow{hb}$ C, 则 A $\xrightarrow{hb}$ C.</li>
+</ul>
+<p>注意以上规则中说的 &ldquo;后续&rdquo; 是指执行的同步顺序 (synchronization order) 而言. happens-before 关系是程序顺序和 synchronized-with 关系的可传递闭包. 虽然 happens-before 和 synchronized-with 关系都是偏序关系, 但同步顺序, 即所有同步操作发生的全局统一顺序是全序关系.</p>
+<h3 id="假借同步">假借同步</h3>
+<p>利用其它已经存在的 happens-before 关系 (结合程序顺序) 来确保可见性, 而不是施加新的 happens-before 关系, 这种技术可称为假借 (piggybacking). 假借的实现比较脆弱易出错, 一般仅用于榨干性能. 但又是其使用是完全合理的, 例如对象通过 BlockingQueue 安全公布的过程就利用了 BlockingQueue 本身的同步特性, 保证了 enqueue 操作 happens-before dequeue 操作.</p>
+<h2 id="公布">公布</h2>
+<h3 id="不安全公布">不安全公布</h3>
+<p>没有恰当使用同步的公布是不安全的, 原因在于公布对象的写操作和构造方法中的写操作可能重排序, 使得其它线程观察到构造不完整的对象.<br>
+不安全公布的一个典型例子是没有同步保护的懒加载.<br>
+除了不可变对象之外, 使用其它线程构造的对象, 如果公布没有 happens-before 使用, 则是不安全的 (当然, 恰当构造也是安全的必要条件).</p>
+<h3 id="安全公布">安全公布</h3>
+<p>happens-before 事实上提供了比安全公布要求更强的保证, 当 A happens-before B, B 不止能观察到 A, 也能观察到与 A 统一线程发生在 A 之前的所有操作.
+Eager initialization 利用 JVM 执行类初始化的同步实现安全公布, Lazy initialization holder class 则是这一技术与 JVM 对类的类加载的结合使用.</p>
+<h3 id="dcl">DCL</h3>
+<p>Double-checked lock 是在早期 JVM 执行上锁比较昂贵的情况下提出的, 由于没有理解可见性的必要性, DCL 成了一个著名的反模式 (anti-pattern), 其主要问题是会导致其它线程观察到不完全构造的对象.<br>
+Java 5.0 及以后对 JMM 的修订, 使得可以通过将对象声明为 volatile 来避免问题, 但由于 DCL 要解决的上锁昂贵的问题已经不存在了, 所以没有什么必要性, 懒加载 holder 模式可以同样功能且更容易理解.</p>
+<h2 id="初始化安全性">初始化安全性</h2>
+<p>JMM 对 final 字段提供了特殊保证: 对于恰当初始化的对象, 所有线程都可以看到在构造方法中为 final 字段设置的正确值. 即使对象的公布过程存在数据竞争.<br>
+另外, 所有仅可以通过恰当构造对象的 final 字段触及的变量, 也保证对其它线程是可见的.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a><a class="tag" href=/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/>内存模型</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-15-atomic-nonblocking/"><span class="li">&rarr;</span>[JCIP] 15.原子变量和非阻塞同步</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>
