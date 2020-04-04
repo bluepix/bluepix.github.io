@@ -97,8 +97,8 @@
 <p><strong>Q:</strong> JMM 提供了哪些保证?<br>
 <strong>A:</strong></p>
 <ul>
-<li>SC for DRF 保证: 正确同步的程序, 其执行是顺序一致执行. 正确同步程序是指在顺序执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是只两个线程的冲突访问没有受到 happens-before 关系约束.</li>
-<li>Out-of-thin-Air 保证: 程序的执行符合因果律, 不会出现无中生有的结果.</li>
+<li>SC for DRF 保证: 正确同步的程序, 其执行是顺序一致执行. 正确同步程序是指在顺序一致执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是只两个线程的冲突访问没有受到 happens-before 关系约束.</li>
+<li>Out-of-Thin-Air 保证: 程序的执行符合因果律, 不会出现无中生有的结果 (即使没有正确同步).</li>
 <li>Final 字段的特殊语义: 实际是补充了 happens-before 关系.</li>
 </ul>
 <p>未完待续&hellip;</p>
