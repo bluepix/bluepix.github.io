@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Java 并发编程问答&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><p><strong>关于 Java 并发编程的一些问题 (尽可能短) 的回答.</strong></p>
+<hr>
+<p><strong>Q:</strong> 并发编程要什么?<br>
+<strong>A:</strong> 并发编程希望得到</p>
+<ul>
+<li>安全性 (Safety): 坏事不会发生.</li>
+<li>活跃性 (Liveness): 好事终会发生.</li>
+<li>高性能 (Performance): 好事快点发生.</li>
+<li>伸缩性 (Scalability): 增加资源可以做更多好事.</li>
+</ul>
+<hr>
+<p><strong>Q:</strong> (线程) 安全到底是什么?<br>
+<strong>A:</strong> (类或程序) 在多线程环境中继续保持<em>正确</em>的性质.</p>
+<hr>
+<p><strong>Q:</strong> 所以什么是线程安全的类?<br>
+<strong>A:</strong> <em>无需额外同步</em>, 即可在多线程环境中继续保持<em>正确</em>的类.</p>
+<hr>
+<p><strong>Q:</strong> 怎样理解类的正确性?<br>
+<strong>A:</strong> 符合类的定义 (specification). <br>类的定义描述了对合法状态的要求和状态变化的规则, 正确的类, 其实例总是在<em>合法的状态</em>之间<em>正确的转移</em>.</p>
+<hr>
+<p><strong>Q:</strong> 对象的状态是指什么?<br>
+<strong>A:</strong> 对象可以从外部观察到的行为表现.<br>对象的状态包含一切能够影响其外部可见行为的数据, 即对象的<em>状态变量</em>, 如对象本身的实例字段、静态字段, 也可能包括对象所依赖的其它对象的字段. 对象也可能<em>没有状态</em>.<br>一个对象的状态的所有可能值, 组成了对象的状态空间.</p>
+<hr>
+<p><strong>Q:</strong> 什么是合法状态?<br>
+<strong>A:</strong> 状态变量满足特定不变式 (invariants) 的约束.<br>这些不变式是类定义的静态部分, 一个类的定义可能包含零到多个不变式, 一个不变式可能涉及一个或多个状态变量.<br>对象的所有合法状态是其状态空间的一个子集.</p>
+<hr>
+<p><strong>Q:</strong> 什么是正确的状态转移?<br>
+<strong>A:</strong> 状态变量的变化符合特定的后置条件 (postconditions).<br>后置条件是类定义的动态部分, 描述了某个操作下状态变量应当从当前值变为什么值.</p>
+<hr>
+<p><strong>Q:</strong> 线程安全的类 $\iff$ 线程安全的程序?<br>
+<strong>A:</strong> 不. 只包含线程安全的类不能保证程序是线程安全的, 同样, 使用非线程安全的类同样可以构造线程安全的程序. 但良好的封装有利于程序正确性的推导和维护.</p>
+<hr>
+<p><strong>Q:</strong> 怎样实现对象的线程安全?<br>
+<strong>A:</strong> 综上, 线程安全是多线程环境下的状态正确, 类的构造方法应该赋予对象合法的状态, 因此状态的正确要求: 安全地完成构造, 其后的每次转换保持正确. 所以具体来说:</p>
+<ul>
+<li>不共享的对象, 没有线程安全问题.</li>
+<li>0 状态: 无状态的对象, 永远线程安全.</li>
+<li>1 状态: 状态不变的对象, 保证安全的构造.</li>
+<li>多状态: 状态可变的对象, 保证安全的构造, 保证安全的状态转换.</li>
+</ul>
+<hr>
+<p><strong>Q:</strong> 具体说说不共享对象?<br>
+<strong>A:</strong> 不共享对象的技术叫做线程封闭 (thread confinement). 因为状态不共享, 因此很容易根据线程内语义保证状态的正确. 实现方式包括 Ad-hoc 方式、栈封闭、ThreadLocal. GUI 程序的界面组件一般是线程封闭的.</p>
+<hr>
+<p><strong>Q:</strong> 安全构造的要求是什么?<br>
+<strong>A:</strong> 安全构造应该防止程序观察到不完整构造的对象. 不完整构造的对象, 其状态是错误的, 更糟的是, 随时可能变化.</p>
+<hr>
+<p><strong>Q:</strong> 怎样做到安全构造?<br>
+<strong>A:</strong> 在同一个线程内, 线程内语义即可保证构造的完整性. 对于非当前线程构造的对象, 关键在于安全公布 (safe publication). 公布是使一个对象对其它线程可见的过程, 不恰当的公布称为逃逸 (escape), 对象在构造期间逃逸称为不恰当构造. 安全发布首先要求恰当构造, 并且公布过程需要必要的同步机制保护. 比较特殊的是不可变对象, 它不需要同步保护公布操作.</p>
+<hr>
+<p><strong>Q:</strong> 什么是不可变对象? 为什么它的公布不需要同步?<br>
+<strong>A:</strong> 不可变对象要满足以下条件:</p>
+<ul>
+<li>构造完成后其状态不再变化</li>
+<li>所有字段是 final 字段</li>
+<li>恰当构造</li>
+</ul>
+<p>Java 内存模型为 final 字段提供了特殊语义, 使得不可变对象的公布不需要同步机制保护.</p>
+<hr>
+<p><strong>Q:</strong> 普通对象的公布为什么需要同步机制?<br>
+<strong>A:</strong> 安全公布要求对象的引用和对象的状态同时对公布的目标线程可见, 这种可见性 (visibility) 要求需要同步机制来保证.</p>
+<hr>
+<p><strong>Q:</strong> Java 提供了哪些同步机制?<br>
+<strong>A:</strong> synchronized 关键字、volatile 关键字、显式锁、原子变量等.</p>
+<hr>
+<p><strong>Q:</strong> 安全的状态转换有什么要求?<br>
+<strong>A:</strong> 状态转换的复杂性主要体现在两方面:</p>
+<ul>
+<li>可能涉及到多个相互约束的状态变量的更新</li>
+<li>状态变量的更新可能是包含多个步骤的复合操作, 如 read-modify-write</li>
+</ul>
+<p>安全的状态转换要求这些过程的中间状态对其它线程是不可见的, 即转换操作具有原子性 (atomicity).</p>
+<hr>
+<p><strong>Q:</strong> 为什么要求原子性?<br>
+<strong>A:</strong> 为了解决竞态条件 (race condition) 问题. 所谓竞态条件是指程序结果的正确性依赖于多个线程执行操作的相对时间和交错方式.</p>
+<hr>
+<p><strong>Q:</strong> 怎样实现原子性?<br>
+<strong>A:</strong> 锁, 原子变量.</p>
+<hr>
+<p><strong>Q:</strong> Java 内存模型 (JMM) 是什么?<br>
+<strong>A:</strong> 程序与系统的一个协议, 描述每次读内存操作能够读到哪次写操作的值. JVM、编译器要配合硬件实现这个协议, 程序可以依赖这个协议实现功能. JMM 是相对底层的话题, 即使不了解 JMM, 也可以通过遵循一些简单的法则构造线程安全的程序.</p>
+<hr>
+<p><strong>Q:</strong> JMM 提供了哪些保证?<br>
+<strong>A:</strong></p>
+<ul>
+<li>SC for DRF 保证: 正确同步的程序, 其执行是顺序一致执行. 正确同步程序是指在顺序执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是只两个线程的冲突访问没有受到 happens-before 关系约束.</li>
+<li>Out-of-thin-Air 保证: 程序的执行符合因果律, 不会出现无中生有的结果.</li>
+<li>Final 字段的特殊语义: 实际是补充了 happens-before 关系.</li>
+</ul>
+<p>未完待续.,,</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/posts/on-jmm/"><span class="li">&rarr;</span>Java 内存模型入门</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

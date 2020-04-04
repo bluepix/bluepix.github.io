@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 03.共享对象&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#可见性">可见性</a>
+      <ul>
+        <li><a href="#概念">概念</a></li>
+        <li><a href="#相关问题">相关问题</a></li>
+        <li><a href="#锁与可见性">锁与可见性</a></li>
+        <li><a href="#volatile-变量">Volatile 变量</a></li>
+      </ul>
+    </li>
+    <li><a href="#公布与逃逸">公布与逃逸</a>
+      <ul>
+        <li><a href="#安全构造实践">安全构造实践</a></li>
+      </ul>
+    </li>
+    <li><a href="#线程封闭">线程封闭</a>
+      <ul>
+        <li><a href="#ad-hoc-线程封闭">Ad-hoc 线程封闭</a></li>
+        <li><a href="#栈封闭-stack-confinement">栈封闭 (Stack confinement)</a></li>
+        <li><a href="#threadlocal">ThreadLocal</a></li>
+      </ul>
+    </li>
+    <li><a href="#不可变-immutability">不可变 (Immutability)</a>
+      <ul>
+        <li><a href="#不可变对象的标准">不可变对象的标准</a></li>
+        <li><a href="#对不可变对象的疑虑">对不可变对象的疑虑</a></li>
+        <li><a href="#final-字段">Final 字段</a></li>
+        <li><a href="#应用">应用</a></li>
+      </ul>
+    </li>
+    <li><a href="#安全公布-safe-publication">安全公布 (Safe publication)</a>
+      <ul>
+        <li><a href="#不恰当公布">不恰当公布</a></li>
+        <li><a href="#不可变对象和初始化安全性">不可变对象和初始化安全性</a></li>
+        <li><a href="#安全公布惯用法">安全公布惯用法</a></li>
+        <li><a href="#实际不可变对象-effectively-immutable-objects">实际不可变对象 (Effectively Immutable objects)</a></li>
+        <li><a href="#可变对象">可变对象</a></li>
+        <li><a href="#对象的公布小结">对象的公布小结</a></li>
+        <li><a href="#安全共享对象小结">安全共享对象小结</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[JCIP] 03.共享对象</h1><p class="article date">2020-03-30</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#可见性">可见性</a>
+      <ul>
+        <li><a href="#概念">概念</a></li>
+        <li><a href="#相关问题">相关问题</a></li>
+        <li><a href="#锁与可见性">锁与可见性</a></li>
+        <li><a href="#volatile-变量">Volatile 变量</a></li>
+      </ul>
+    </li>
+    <li><a href="#公布与逃逸">公布与逃逸</a>
+      <ul>
+        <li><a href="#安全构造实践">安全构造实践</a></li>
+      </ul>
+    </li>
+    <li><a href="#线程封闭">线程封闭</a>
+      <ul>
+        <li><a href="#ad-hoc-线程封闭">Ad-hoc 线程封闭</a></li>
+        <li><a href="#栈封闭-stack-confinement">栈封闭 (Stack confinement)</a></li>
+        <li><a href="#threadlocal">ThreadLocal</a></li>
+      </ul>
+    </li>
+    <li><a href="#不可变-immutability">不可变 (Immutability)</a>
+      <ul>
+        <li><a href="#不可变对象的标准">不可变对象的标准</a></li>
+        <li><a href="#对不可变对象的疑虑">对不可变对象的疑虑</a></li>
+        <li><a href="#final-字段">Final 字段</a></li>
+        <li><a href="#应用">应用</a></li>
+      </ul>
+    </li>
+    <li><a href="#安全公布-safe-publication">安全公布 (Safe publication)</a>
+      <ul>
+        <li><a href="#不恰当公布">不恰当公布</a></li>
+        <li><a href="#不可变对象和初始化安全性">不可变对象和初始化安全性</a></li>
+        <li><a href="#安全公布惯用法">安全公布惯用法</a></li>
+        <li><a href="#实际不可变对象-effectively-immutable-objects">实际不可变对象 (Effectively Immutable objects)</a></li>
+        <li><a href="#可变对象">可变对象</a></li>
+        <li><a href="#对象的公布小结">对象的公布小结</a></li>
+        <li><a href="#安全共享对象小结">安全共享对象小结</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<h2 id="可见性">可见性</h2>
+<h3 id="概念">概念</h3>
+<p>原子性保证状态正确地转换, 可见性要求状态的转换可以在其它线程观察到.</p>
+<ul>
+<li>来源: 编译器、运行时、硬件的优化 (如分支预测执行、内存缓存)等会造成指令乱序执行. JMM 要求同一个线程内部观察到与顺序执行一致的结果, 但在缺乏必要的同步的情况下, 多个线程执行操作的顺序不能依照程序顺序推导. 这就导致似乎应发生在前的某些写操作在其它线程上无法观察到.</li>
+<li>结论: 在多线程之间共享数据时, 始终要适当的使用同步机制.</li>
+</ul>
+<h3 id="相关问题">相关问题</h3>
+<p>可见性的丧失可能造成的问题如:</p>
+<ul>
+<li>陈旧数据 (Stale data): 读线程观察到的不是数据的最新值, 有可能造成严重且费解的错误, 如意外的异常、破损的数据结构、不准确的计算、无限循环等.</li>
+<li>非原子性 64-bit 数据操作: JMM 不保证非 volatile 且未受锁保护的 long 和 double 数据的写操作是原子的, 允许某些实现将其分成两个 32-bit 的写操作, 这意味这一个线程可能观察 double 和 long 数据, 看到的高 32 位和低 32 位可能不是来自同一次写操作.</li>
+</ul>
+<h3 id="锁与可见性">锁与可见性</h3>
+<p>锁除了实现互斥执行, 也能保证内存可见性. JMM 保证一个线程在释放锁之前的写操作, 可以在后续获取到锁的另一个线程中观察到.</p>
+<h3 id="volatile-变量">Volatile 变量</h3>
+<ul>
+<li>声明为 volatile 的变量, 编译器和运行时保证对其执行的读写操作不与其它操作进行冲排序. 这些变量不在寄存器或缓存中缓存, 每次读取总是返回所有线程执行的最近一次写操作的值.</li>
+<li>Volatile 是轻量级的, 在多数现代处理器上只比非 volatile 变量的读写多消耗一点性能.</li>
+<li>JMM 还保证, 若 A 线程对一个 volatile 变量的写操作在 B 线程上能够读到, 则此次写操作之前所有对 A 可见的写操作, 在此次读操作之后也对 B 可见. 从可见性的角度看, 写 volatile 变量如释放锁, 读 volatile 变量如获取锁.</li>
+<li>相比使用锁, 使用 volatile 变量的程序逻辑脆弱、不易推导和理解, 因此不鼓励严重依赖 volatile 变量. 常见的使用 volatile 变量的场景是将其作为完成、中断或状态的标记位.</li>
+<li>锁可以用来保证原子性和可见性, 但 volatile 仅能保证可见性.</li>
+</ul>
+<h2 id="公布与逃逸">公布与逃逸</h2>
+<dl>
+<dt>公布 (Publication)</dt>
+<dd>公布一个对象即使其在当前作用域以外的代码中可以访问到.</dd>
+</dl>
+<p>注意:</p>
+<ul>
+<li>线程安全的公布一个对象需要使用必要的同步.</li>
+<li>公布对象的内部状态可能破坏封装性, 导致不变式难以维持.</li>
+<li>在完全构造完成之前公布对象会影响线程安全性.</li>
+</ul>
+<dl>
+<dt>逃逸 (Escape)</dt>
+<dd>对象在不恰当的情况下公布称为逃逸.</dd>
+</dl>
+<p>可能造成公布一个对象 (逃逸) 的操作</p>
+<ul>
+<li>将对象引用赋值给公共静态变量.</li>
+<li>将对象从非 private 方法返回.</li>
+<li>公布一个对象会间接公布所有可以通过其非 private 字段或方法引用的其它对象.</li>
+<li>将对象作为参数传递给一个 alien 方法. 对一个类 C 来说, alien 方法是指其行为不能由 C 完全定义的方法, 包括其它类的方法、C 自己允许覆盖的方法 (非 private 非 final 方法).</li>
+<li>公布内部类实例, 因为内部类实例包含对外部类的隐含引用.</li>
+</ul>
+<h3 id="安全构造实践">安全构造实践</h3>
+<dl>
+<dt>不恰当构造</dt>
+<dd><code>this</code> 引用在构造期间逃逸, 则认为对象没有恰当构造.</dd>
+</dl>
+<p>对象只有在完成构造后才进入到一个可预测、一致的状态中, 因此不应在构造过程中公布 <code>this</code> 引用 (即使公布发生在构造方法的最后).</p>
+<p>可能造成不恰当构造的做法</p>
+<ul>
+<li>在构造方法中启动线程. 线程对象可能显式或隐式地持有对象的 <code>this</code> 引用</li>
+<li>在构造方法中调用一个可以覆盖的方法</li>
+</ul>
+<p>在有以上类似的需求时, 可以用 &quot; private 构造方法 + 静态工厂方法&rdquo; 的模式处理, 避免不恰当构造.</p>
+<h2 id="线程封闭">线程封闭</h2>
+<p>由于线程安全问题产生于共享可变对象, 一个最简单的解决方式是<em>不共享</em>. 限制一个对象只能在一个线程内访问, 则即使对象本身不是线程安全的, 仍可达到线程安全的目的, 这种技术称为<em>线程封闭 (Thread confinement)</em>.</p>
+<p>本身不是线程安全对象, 通过线程封闭达到线程安全的例子如:</p>
+<ul>
+<li>Swing 的界面组件类和数据 model 类对象</li>
+<li>Android 的 UI 组件类对象</li>
+<li>JDBC 的池化 Connection 对象</li>
+</ul>
+<p>Java 语言没有强制线程封闭的机制 (尽管语言和核心库提供了帮助实现线程封闭的机制: 本地变量和 ThreadLocal 类), 因此线程封闭需要作为程序段策略实现.</p>
+<h3 id="ad-hoc-线程封闭">Ad-hoc 线程封闭</h3>
+<p>Ad-hoc线程封闭是指完全依赖实现来维护的线程封闭. 这种方式的线程封闭形式是脆弱的, 因为没有任何语言特性如可见性修饰符、本地变量等的辅助, 甚至有些线程封闭的对象直接保存在公共字段中.<br>
+采用这种方式往往是源于使用单线程实现某个特定子系统的设计决定, 其提供的简单性使得 ad-hoc 线程封闭的脆弱性可以接受.<br>
+一个特殊的线程封闭: 限制对 volatile 变量的写操作只能在一个线程进行, 在此线程上对其执行 read-modify-write 操作是安全的, 因为避免了静态条件, 而 volatile 的可见性保证确保了其它线程读到最新的值.<br>
+应当尽量避免使用 ad-hoc 线程封闭, 而选择更健壮的线程封闭实现.</p>
+<h3 id="栈封闭-stack-confinement">栈封闭 (Stack confinement)</h3>
+<p>由于栈内存天然是线程独享的, 限制变量只能从栈上变量访问就实现了线程封闭.</p>
+<ul>
+<li>语言本身保证了原始类型的本地变量是线程封闭的.</li>
+<li>引用类型的栈封闭需要程序避免其逃逸.</li>
+</ul>
+<p>通过栈封闭可以允许使用非线程安全的对象实现线程安全程序, 但这些特性需要体现在文档中避免以外的违反.</p>
+<h3 id="threadlocal">ThreadLocal</h3>
+<p>ThreadLocal 为线程封闭提供了一种更为正式的方式, ThreadLocal 允许在一个对象中为每个线程持有各自的值, get 和 set 方法为使用它的线程维护了单独的 copy, get 方法总是返回同一个线程最近调用 set 方法传入的值. 某个线程第一次调用 get 时, ThreadLocal调用 initialValue 方法来生成初始值. ThreadLocal 可以近似看作是一个 Map, 但实际的线程相关的值保存在 Thread 对象本身中. 线程终止后, 其特有的值可以被回收.</p>
+<ul>
+<li>经常在基于可变单例和全局变量的设计中使用来避免共享, 如维护全局的数据库连接来避免为每个方法传入连接, 由于 JDBC 连接不是线程安全的, 可以使用 ThreadLocal 来为每个线程维护单独的连接对象.</li>
+<li>如果频繁调用的操作需要使用临时对象, 如 buffer, 可以用 ThreadLocal 来避免每次重新分配临时对象. 但现在倾向于每次重新创建.</li>
+<li>将一个单线程应用移植到多线程环境时, 可以考虑是否可以用 ThreadLocal 代替原来的全局变量.</li>
+</ul>
+<p>ThreadLocal 会降低可复用性, 引入额外的耦合, 应当谨慎使用.</p>
+<h2 id="不可变-immutability">不可变 (Immutability)</h2>
+<p>另一个完全不使用同步保证线程安全的方法: <em>不可变</em>. 不可变 (Immutable) 对象的状态在构造完成后不再改变. 不可变对象的不变式在构造方法中建立, 由于构造完成后不再改变状态, 不变式永远成立. 因此, <em>不可变对象天然是线程安全的</em>.</p>
+<p>不可变对象的优点:</p>
+<ul>
+<li>简单. 状态空间只有一个, 状态推导极其简单.</li>
+<li>更安全. 在不进行保护性拷贝 (defensive copy) 的情况下共享和公布, 允许不可信代码访问, 仍能保持安全.</li>
+</ul>
+<h3 id="不可变对象的标准">不可变对象的标准</h3>
+<ul>
+<li>其状态在构造完成后不可改变</li>
+<li>所有的字段都是 final</li>
+<li>恰当构造</li>
+</ul>
+<blockquote>
+<ol>
+<li>所有字段都是 final 不能保证对象是不可变的, 因为 final 字段本身还可能是可变的, 但允许不可变对象使用可变对象来维护状态, 重要的是在构造方法返回后状态即不可修改.</li>
+<li>有可能允许某些字段非 final 的情况下构造不可变对象, 如 String. 但是这需要对 JMM 的深入理解.</li>
+</ol>
+</blockquote>
+<h3 id="对不可变对象的疑虑">对不可变对象的疑虑</h3>
+<p><strong>Q:</strong> 程序的核心是状态的变化. 状态不可变的对象有用吗?<br>
+<strong>A:</strong> 有用: 虽然对象的状态不可变, 但是对对象的引用可以更新.</p>
+<p><strong>Q:</strong> 频繁的创建不可变对象会不会带来性能损耗?<br>
+<strong>A:</strong> 1) 在现代虚拟机上创建对象的代价没有想象中那么高. 2) 不可变对象的使用, 减少了锁和保护性拷贝的使用, 降低了对分代 GC 的影响, 因而可以带来一定的性能提升.</p>
+<h3 id="final-字段">Final 字段</h3>
+<p>Final 字段用于支持构造不可变对象, JMM 为 final 字段提供了特殊的保证, 从而支持<em>安全初始化</em>, 在不使用同步的情况下允许对不可变对象安全地自由访问.<br>
+即使对象不是 &ldquo;完全&rdquo; 不可变的, 将字段尽可能的声明为 final 可以减少其可能状态, 简化状态推导.<br>
+<em>正如应当尽可能将字段声明为私有, 也应当尽可能将字段声明为 final.</em></p>
+<h3 id="应用">应用</h3>
+<p>使用 volatile 变量公布多个关联状态组成不可变对象.</p>
+<h2 id="安全公布-safe-publication">安全公布 (Safe publication)</h2>
+<h3 id="不恰当公布">不恰当公布</h3>
+<p>在公布对象的过程中没有充分使用同步, 有可能使其它线程观察到部分构造的对象, 称为不恰当公布.<br>
+安全公布要求在公布过程中使用必要的同步.</p>
+<h3 id="不可变对象和初始化安全性">不可变对象和初始化安全性</h3>
+<p>JMM 的 final 字段语义, 给不可变对象提供了特殊保证. 注意不可变对象的字段都是 final 的, 并且是恰当构造的.</p>
+<dl>
+<dt>Final 字段的特殊语义</dt>
+<dd>如果一个线程在一个对象完全构造之后观察到它, 则这个线程一定能够读到这个对象的 final 字段的在构造方法中写入的正确的值, 即使不使用额外的同步.</dd>
+<dt>不可变对象的初始化安全性</dt>
+<dd>不可变对象可以不使用同步机制在任意线程中安全访问, 即使发布时没有使用同步.</dd>
+</dl>
+<p>事实上根据 final 字段的语义, 任何恰当构造对象的 final 字段都可以不使用同步安全的访问. 但如果这些字段本身是可变对象, 访问其状态时仍需同步.</p>
+<h3 id="安全公布惯用法">安全公布惯用法</h3>
+<p>要安全地公布对象, 必须使对象的引用和对象的状态同时对其它线程可见. 一个恰当构造的对象, 可以以以下方式安全公布:</p>
+<ul>
+<li>在 static initializer 中初始化一个对象的引用</li>
+<li>将对象的引用保存到一个 volatile 字段或 AtomicReference 中</li>
+<li>将对象的引用保存到一个恰当构造的对象的 final 字段中</li>
+<li>将对象引用保存到一个恰当地受到锁保护的字段</li>
+</ul>
+<p>第一点通常是安全发布可静态构造的对象最简单安全的方式, static initializer 是在类初始化时执行的, 由 JVM 的内部同步机制保证其发布的安全性.<br>
+作为最后一点的应用, Java 标准库提供的线程安全集合也可以提供安全公布功能, 将一个恰当构造的对象放入线程安全集合中, 可以保证后续取出它的线程可以观察到正确的状态.<br>
+标准库中其它的递交机制 (如 Future、Exchanger 等) 也可以提供安全发布.</p>
+<h3 id="实际不可变对象-effectively-immutable-objects">实际不可变对象 (Effectively Immutable objects)</h3>
+<p>不严格满足不可变对象的要求, 但在构造完成后其状态不再改变的对象, 称为实际不可变的. 其使用可以简化开发, 提高性能.<br>
+安全公布的实际不可变对象可以不使用同步在任意线程安全地访问.</p>
+<h3 id="可变对象">可变对象</h3>
+<p>对于可变对象, 安全发布可以保证其发布时状态 (as-published state) 的可见性. 在每次访问时也需要使用同步以保证后续状态修改的可见性. 要安全的共享可变对象, 对象必须安全公布, 并且是线程安全的或受锁保护.</p>
+<h3 id="对象的公布小结">对象的公布小结</h3>
+<p>一个对象的公布机制要求取决于其可变性:</p>
+<ul>
+<li>不可变对象可以以任意机制发布.</li>
+<li>实际不可变对象必须安全地公布.</li>
+<li>可变对象必须安全地公布, 并且必须是线程安全的或受一个锁的保护.</li>
+</ul>
+<h3 id="安全共享对象小结">安全共享对象小结</h3>
+<p>获取到一个对象引用时, 需要知道允许对其进行的访问类型. 反过来, 在共享对象时, 应在文档中说明这些对象允许的访问.<br>
+多线程程序中最有用的使用和共享对象的策略包括:</p>
+<ul>
+<li><strong>线程封闭型 (Thread-confined):</strong> 一个线程封闭型对象为一个线程所独占且封闭于此线程, 仅允许拥有它的线程修改.</li>
+<li><strong>共享只读型 (Shared read-only):</strong> 共享只读型的对象可以在多个线程中不使用额外同步并发访问, 但不允许任意线程修改. 包括不可变对象和实际不可变对象.</li>
+<li><strong>共享线程安全型 (Shared thread-safe):</strong> 共享线程安全对象在内部封装了同步机制, 可以在多个线程中通过其公开接口安全地访问, 而不需要进一步的同步措施.</li>
+<li><strong>受保护型 (Guarded):</strong> 必须在持有特定的锁的情况下访问. 包括其它线程安全对象中封装的对象, 或已知受某个锁保护的已公布对象.</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/jcip/jcip-04-composing-objects/"><span class="li">&larr;</span>[JCIP] 04.组合对象</a></p><p><a class="link" href="/notes/jcip/jcip-02-thread-safety/"><span class="li">&rarr;</span>[JCIP] 02.线程安全</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

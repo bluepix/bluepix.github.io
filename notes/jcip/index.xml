@@ -133,6 +133,16 @@
     </item>
     
     <item>
+      <title>[JCIP] 03.共享对象</title>
+      <link>/notes/jcip/jcip-03-sharing-objects/</link>
+      <pubDate>Mon, 30 Mar 2020 15:31:24 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-03-sharing-objects/</guid>
+      <description>可见性 概念 原子性保证状态正确地转换, 可见性要求状态的转换可以在其它线程观察到. 来源: 编译器、运行时、硬件的优化 (如分支预测执行、内存缓存)等</description>
+      
+    </item>
+    
+    <item>
       <title>[JCIP] 02.线程安全</title>
       <link>/notes/jcip/jcip-02-thread-safety/</link>
       <pubDate>Mon, 30 Mar 2020 14:07:36 +0800</pubDate>
