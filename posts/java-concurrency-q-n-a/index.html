@@ -65,7 +65,7 @@
 <p><strong>Q:</strong> 普通对象的公布为什么需要同步机制?<br>
 <strong>A:</strong> 安全公布要求对象的引用和对象的状态同时对公布的目标线程可见, 这种可见性 (visibility) 要求需要同步机制来保证.</p>
 <hr>
-<p><strong>Q:</strong> 执行了不就可见了吗, 为什么还需要同步?
+<p><strong>Q:</strong> 执行了不就可见了吗, 为什么还需要同步?<br>
 <strong>A:</strong> 在单线程程序中, 确实如此, 程序中写在 A 操作后面的 B 操作在执行时一定能看到 A 的效果, 这叫顺序执行. 在顺序执行的表象下隐藏着编译器、JVM 以及硬件的大量性能优化. 如指令顺序调整、预测执行、缓存等. 一旦到了多线程环境, 继续隐藏这些需要极大地牺牲性能. 因此 Java 内存模型选择将这些重排序 (reordering) 现象暴露给程序, 同时提供各种同步机制用于禁止实现执行某些重排序, 让程序可以在必要时强制执行顺序.</p>
 <hr>
 <p><strong>Q:</strong> 同步机制禁止重排序是怎么实现的?<br>
@@ -88,10 +88,10 @@
 </ul>
 <p>Java 内存模型为 final 字段提供了特殊语义, 使得不可变对象的公布不需要同步机制保护.</p>
 <hr>
-<p><strong>Q:</strong> 不可变对象一定要用 final 吗, 构造完不再修改不就行了?
+<p><strong>Q:</strong> 不可变对象一定要用 final 吗, 构造完不再修改不就行了?<br>
 <strong>A:</strong> 这种对象叫做实际不可变对象 (effectively immutable object), 它也只有一个状态, 因此在公布后的访问中不需要同步保护, 但是不享受 final 字段的特殊语义保护, 仍需要安全公布.</p>
 <hr>
-<p><strong>Q:</strong> final 字段的特殊语义是什么?
+<p><strong>Q:</strong> final 字段的特殊语义是什么?<br>
 <strong>A:</strong> 恰当构造的对象, 对普通字段, 由于重排序, 其它线程还是可能看到未经构造方法初始化的默认值, 但对 final 字段, Java 内存模型保证其它线程只能观察的正确初始化之后的值. 在实现方面, 这个特殊语义实际上额外禁止了实现执行某些重排序.</p>
 <hr>
 <p><strong>Q:</strong> 安全的状态转换有什么要求?<br>
@@ -108,19 +108,19 @@
 <p><strong>Q:</strong> 程序怎样实现操作的原子性?<br>
 <strong>A:</strong> 最常用的方式是使用 synchronized 关键字, 用内置锁 (intrinsic lock) 保护复合操作, 实现复合操作访问的互斥 (mutual exclusion). 显式锁如 ReentrantLock 提供了与内置锁同样的功能. 从 Java 5.0 开始, 通过原子变量类型可以直接在 Java 代码中利用硬件对 CAS 操作的支持实现一些原子操作.</p>
 <hr>
-<p><strong>Q:</strong> 内置锁是怎么实现互斥的? 是不是性能开销很大?
+<p><strong>Q:</strong> 内置锁是怎么实现互斥的? 是不是性能开销很大?<br>
 <strong>A:</strong> 内置锁的实现和具体的 JVM 有关, 并且可能随着 JVM 的版本不断地优化. 以 HotSpot 为例, 内置锁的获取涉及偏向锁、CAS 指令、自旋锁、OS 级别锁和线程挂起等技术. 在锁争用不太多的情况下, 现代 JVM 对内置锁的优化已经相当好, 加之 JVM 的锁消除、逃逸分析, 编译器的锁粗化等优化措施, 一般不用担心内置锁带来的性能开销.</p>
 <hr>
-<p><strong>Q:</strong> 那为什么还要开发显式锁? 它又是怎么实现的?
+<p><strong>Q:</strong> 那为什么还要开发显式锁? 它又是怎么实现的?<br>
 <strong>A:</strong> 内置锁有一些局限, 比如获取过程不能中断、不支持带超时获取、没有定义公平性等, ReentrantLock 作为 Lock 接口的一个实现, 提供了与内置锁一致的同步功能, 并支持了这些高级特性. ReentrantLock 基于 AQS 实现, 底层是 CAS 操作, 因而在刚刚引入时提供了比内置锁明显更好的伸缩性.</p>
 <hr>
 <p><strong>Q:</strong> 那么何不完全用 ReentrantLock 代替内置锁?<br>
 <strong>A:</strong> 内置锁的语法更加紧凑自然, 并且 ReentrantLock 的释放不是自动的, 不当使用会造成错误. 因此建议使用内置锁, 只有需要 ReentrantLock 提供的高级特性时才使用它.</p>
 <hr>
-<p><strong>Q:</strong> 什么是 Java monitor 模式?
+<p><strong>Q:</strong> 什么是 Java monitor 模式?<br>
 <strong>A:</strong> 一种常用的模式, 将状态封装在一个对象中, 并用对象的内置锁保护这些状态. Java 的内置锁也称 monitor 锁, 甚至对应的字节码指令也叫 monitorenter 和 monitorexit.</p>
 <hr>
-<p><strong>Q:</strong> volatile 变量又有什么作用?
+<p><strong>Q:</strong> volatile 变量又有什么作用?<br>
 <strong>A:</strong> volatile 禁止编译器其所修饰变量的读写操作与其它操作进行指令重排, 也不允许缓存产生类似的作用. JSR 133 对内存模型的修订完善了 volatile 的语义, 具体来说, 对 volatile 变量的写操作不能与其之前的任何操作重排序, 对 volatile 变量的读操作不能与其之后的任何操作重排序. 从可见性的角度来说, 写 volatile 变量如同释放锁, 读 volatile 变量如同获取锁.</p>
 <hr>
 <p><strong>Q:</strong> Java 内存模型 (JMM) 是什么?<br>
@@ -137,7 +137,11 @@
 <p><strong>Q:</strong> 怎样才是正确同步的程序?<br>
 <strong>A:</strong> 正确同步的程序是指在顺序一致执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是指两个线程对同一数据的冲突访问没有受到 happens-before 关系约束. Final 字段的特殊语义, 实际上是对 happens-before 关系的补充.</p>
 <hr>
-<p><strong>Q:</strong></p>
+<p><strong>Q:</strong> 什么是死锁?<br>
+<strong>A:</strong> 最常见的死锁是锁顺序死锁 (lock-ordering deadlock), 即两个线程互相等待获取对方持有的锁, 导致都无法继续进行. 死锁还包括资源死锁, 即两个线程都阻塞等待对方占用的资源. JVM 不会检测和恢复死锁, 因此出现死锁唯一的办法是重启.</p>
+<hr>
+<p><strong>Q:</strong> 如何避免锁顺序死锁?<br>
+<strong>A:</strong> 锁顺序死锁出现的条件, 是两个线程以相反的顺序阻塞地获取同一对锁. 一个规避方式是让所有线程以一致的顺序获取锁, 通过程序逻辑保证这一点实际上很难. 比如, 锁对象的值是动态的, 需要对顺序进行与执行逻辑无关的推导, 对于本身没有顺序属性的对象, 可以根据 System.identityHashCode 的值对所有锁对象进行排序. 只使用开放调用 (open calling, 在不持锁的情况下调用方法) 有助于分析和保证锁顺序的一致性.</p>
 <p>未完待续&hellip;</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a></section><div id="bottom-sticky">
     <a id="gototop"></a>
