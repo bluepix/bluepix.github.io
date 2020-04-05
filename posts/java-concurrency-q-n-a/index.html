@@ -12,7 +12,7 @@
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
-    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><p><strong>关于 Java 并发编程的一些问题 (尽可能短) 的回答.</strong></p>
+    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><p><strong>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答.</strong></p>
 <hr>
 <p><strong>Q:</strong> 并发编程要什么?<br>
 <strong>A:</strong> 并发编程希望得到</p>
@@ -33,7 +33,7 @@
 <strong>A:</strong> 符合类的定义 (specification). <br>类的定义描述了对合法状态的要求和状态变化的规则, 正确的类, 其实例总是在<em>合法的状态</em>之间<em>正确的转移</em>.</p>
 <hr>
 <p><strong>Q:</strong> 对象的状态是指什么?<br>
-<strong>A:</strong> 对象可以从外部观察到的行为表现.<br>对象的状态包含一切能够影响其外部可见行为的数据, 即对象的<em>状态变量</em>, 如对象本身的实例字段、静态字段, 也可能包括对象所依赖的其它对象的字段. 对象也可能<em>没有状态</em>.<br>一个对象的状态的所有可能值, 组成了对象的状态空间.</p>
+<strong>A:</strong> 对象可以从外部观察到的行为表现.<br>对象的状态包含一切能够影响其外部可见行为的数据, 即对象的<em>状态变量</em>, 可能包括对象本身的实例字段、静态字段, 也可能包括对象所依赖的其它对象的字段. 对象也可能<em>没有状态</em>.<br>一个对象的状态的所有可能值, 组成了对象的状态空间.</p>
 <hr>
 <p><strong>Q:</strong> 什么是合法状态?<br>
 <strong>A:</strong> 状态变量满足特定不变式 (invariants) 的约束.<br>这些不变式是类定义的静态部分, 一个类的定义可能包含零到多个不变式, 一个不变式可能涉及一个或多个状态变量.<br>对象的所有合法状态是其状态空间的一个子集.</p>
@@ -42,28 +42,45 @@
 <strong>A:</strong> 状态变量的变化符合特定的后置条件 (postconditions).<br>后置条件是类定义的动态部分, 描述了某个操作下状态变量应当从当前值变为什么值.</p>
 <hr>
 <p><strong>Q:</strong> 线程安全的类 $\iff$ 线程安全的程序?<br>
-<strong>A:</strong> 不. 只包含线程安全的类不能保证程序是线程安全的, 同样, 使用非线程安全的类同样可以构造线程安全的程序. 但良好的封装有利于程序正确性的推导和维护.</p>
+<strong>A:</strong> 不. 只包含线程安全的类不能保证程序是线程安全的, 同样, 使用非线程安全的类同样可以构造线程安全的程序. <em>但良好的封装有利于程序正确性的推导和维护</em>.</p>
 <hr>
 <p><strong>Q:</strong> 怎样实现对象的线程安全?<br>
-<strong>A:</strong> 综上, 线程安全是多线程环境下的状态正确, 类的构造方法应该赋予对象合法的状态, 因此状态的正确要求: 安全地完成构造, 其后的每次转换保持正确. 所以具体来说:</p>
+<strong>A:</strong> 综上, 线程安全是多线程环境下的状态正确, 类的构造方法应该赋予对象合法的状态, 因此状态的正确要求: 安全地完成构造, 其后的每次转换保持正确. 分情况看:</p>
 <ul>
 <li>不共享的对象, 没有线程安全问题.</li>
 <li>0 状态: 无状态的对象, 永远线程安全.</li>
-<li>1 状态: 状态不变的对象, 保证安全的构造.</li>
-<li>多状态: 状态可变的对象, 保证安全的构造, 保证安全的状态转换.</li>
+<li>1 状态: 状态不变的对象, 需要保证其安全地构造.</li>
+<li>多状态: 状态可变的对象, 需要保证其安全地构造, 安全安全地转换状态.</li>
 </ul>
 <hr>
 <p><strong>Q:</strong> 具体说说不共享对象?<br>
-<strong>A:</strong> 不共享对象的技术叫做线程封闭 (thread confinement). 因为状态不共享, 因此很容易根据线程内语义保证状态的正确. 实现方式包括 Ad-hoc 方式、栈封闭、ThreadLocal. GUI 程序的界面组件一般是线程封闭的.</p>
+<strong>A:</strong> 不共享对象的技术叫做线程封闭 (thread confinement). 因为状态不共享, 因此很容易根据线程内语义保证状态的正确. 难点在于如何保持单线程访问, 因为语言级别没有提供任何强制线程封闭的机制. 实现方式包括 Ad-hoc 方式、栈封闭、ThreadLocal. GUI 程序的界面组件一般是采用线程封闭的设计.</p>
 <hr>
-<p><strong>Q:</strong> 安全构造的要求是什么?<br>
-<strong>A:</strong> 安全构造应该防止程序观察到不完整构造的对象. 不完整构造的对象, 其状态是错误的, 更糟的是, 随时可能变化.</p>
+<p><strong>Q:</strong> 安全的构造要求什么?<br>
+<strong>A:</strong> 应该防止程序观察到不完整构造的对象. 不完整构造的对象, 其状态是错误的, 更糟的是, 随时可能变化.</p>
 <hr>
 <p><strong>Q:</strong> 怎样做到安全构造?<br>
-<strong>A:</strong> 在同一个线程内, 线程内语义即可保证构造的完整性. 对于非当前线程构造的对象, 关键在于安全公布 (safe publication). 公布是使一个对象对其它线程可见的过程, 不恰当的公布称为逃逸 (escape), 对象在构造期间逃逸称为不恰当构造. 安全发布首先要求恰当构造, 并且公布过程需要必要的同步机制保护. 比较特殊的是不可变对象, 它不需要同步保护公布操作.</p>
+<strong>A:</strong> 在同一个线程内, 线程内语义即可保证构造的完整性. 对于非当前线程构造的对象, 关键在于安全公布 (safe publication). 公布是使一个对象对其它作用域可见的过程, 不恰当的公布称为逃逸 (escape), 对象在构造期间逃逸称为不恰当构造. 安全发布首先要求恰当构造, 并且公布过程需要必要的同步机制保护. 比较特殊的是不可变对象, 它不需要同步保护公布操作.</p>
+<hr>
+<p><strong>Q:</strong> 普通对象的公布为什么需要同步机制?<br>
+<strong>A:</strong> 安全公布要求对象的引用和对象的状态同时对公布的目标线程可见, 这种可见性 (visibility) 要求需要同步机制来保证.</p>
+<hr>
+<p><strong>Q:</strong> 执行了不就可见了吗, 为什么还需要同步?
+<strong>A:</strong> 在单线程程序中, 确实如此, 程序中写在 A 操作后面的 B 操作在执行时一定能看到 A 的效果, 这叫顺序执行. 在顺序执行的表象下隐藏着编译器、JVM 以及硬件的大量性能优化. 如指令顺序调整、预测执行、缓存等. 一旦到了多线程环境, 继续隐藏这些需要极大地牺牲性能. 因此 Java 内存模型选择将这些重排序 (reordering) 现象暴露给程序, 同时提供各种同步机制用于禁止实现执行某些重排序, 让程序可以在必要时强制执行顺序.</p>
+<hr>
+<p><strong>Q:</strong> 同步机制禁止重排序是怎么实现的?<br>
+<strong>A:</strong> 禁止重排序要求</p>
+<ul>
+<li>编译器不进行指令的重排.</li>
+<li>JVM 插入必要的内存屏障 (memory barrier) 指令, 使处理器执行时不发生重排序. 何处需要插入内存屏障指令、插入什么指令是平台相关的, 需要 JVM 根据硬件的内存模型决定.</li>
+<li>JVM 利用硬件的 CAS 类原子操作指令执行某些操作.</li>
+</ul>
+<hr>
+<p><strong>Q:</strong> Java 提供了哪些同步机制?<br>
+<strong>A:</strong> synchronized 关键字、volatile 关键字、显式锁、原子变量等.</p>
 <hr>
 <p><strong>Q:</strong> 什么是不可变对象? 为什么它的公布不需要同步?<br>
-<strong>A:</strong> 不可变对象要满足以下条件:</p>
+<strong>A:</strong> 不可变对象 (immutable object) 要满足以下条件:</p>
 <ul>
 <li>构造完成后其状态不再变化</li>
 <li>所有字段是 final 字段</li>
@@ -71,36 +88,56 @@
 </ul>
 <p>Java 内存模型为 final 字段提供了特殊语义, 使得不可变对象的公布不需要同步机制保护.</p>
 <hr>
-<p><strong>Q:</strong> 普通对象的公布为什么需要同步机制?<br>
-<strong>A:</strong> 安全公布要求对象的引用和对象的状态同时对公布的目标线程可见, 这种可见性 (visibility) 要求需要同步机制来保证.</p>
+<p><strong>Q:</strong> 不可变对象一定要用 final 吗, 构造完不再修改不就行了?
+<strong>A:</strong> 这种对象叫做实际不可变对象 (effectively immutable object), 它也只有一个状态, 因此在公布后的访问中不需要同步保护, 但是不享受 final 字段的特殊语义保护, 仍需要安全公布.</p>
 <hr>
-<p><strong>Q:</strong> Java 提供了哪些同步机制?<br>
-<strong>A:</strong> synchronized 关键字、volatile 关键字、显式锁、原子变量等.</p>
+<p><strong>Q:</strong> final 字段的特殊语义是什么?
+<strong>A:</strong> 恰当构造的对象, 对普通字段, 由于重排序, 其它线程还是可能看到未经构造方法初始化的默认值, 但对 final 字段, Java 内存模型保证其它线程只能观察的正确初始化之后的值. 在实现方面, 这个特殊语义实际上额外禁止了实现执行某些重排序.</p>
 <hr>
 <p><strong>Q:</strong> 安全的状态转换有什么要求?<br>
 <strong>A:</strong> 状态转换的复杂性主要体现在两方面:</p>
 <ul>
-<li>可能涉及到多个相互约束的状态变量的更新</li>
-<li>状态变量的更新可能是包含多个步骤的复合操作, 如 read-modify-write</li>
+<li>多变量: 可能涉及到多个相互约束的状态变量的更新</li>
+<li>多步骤: 状态变量的更新可能是包含多个步骤的复合操作, 如 read-modify-write</li>
 </ul>
 <p>安全的状态转换要求这些过程的中间状态对其它线程是不可见的, 即转换操作具有原子性 (atomicity).</p>
 <hr>
 <p><strong>Q:</strong> 为什么要求原子性?<br>
-<strong>A:</strong> 为了解决竞态条件 (race condition) 问题. 所谓竞态条件是指程序结果的正确性依赖于多个线程执行操作的相对时间和交错方式.</p>
+<strong>A:</strong> 为了解决竞态条件 (race condition) 问题. 所谓竞态条件, 是指程序结果的正确性依赖于多个线程执行操作的相对时间和交错方式.</p>
 <hr>
-<p><strong>Q:</strong> 怎样实现原子性?<br>
-<strong>A:</strong> 锁, 原子变量.</p>
+<p><strong>Q:</strong> 程序怎样实现操作的原子性?<br>
+<strong>A:</strong> 最常用的方式是使用 synchronized 关键字, 用内置锁 (intrinsic lock) 保护复合操作, 实现复合操作访问的互斥 (mutual exclusion). 显式锁如 ReentrantLock 提供了与内置锁同样的功能. 从 Java 5.0 开始, 通过原子变量类型可以直接在 Java 代码中利用硬件对 CAS 操作的支持实现一些原子操作.</p>
+<hr>
+<p><strong>Q:</strong> 内置锁是怎么实现互斥的? 是不是性能开销很大?
+<strong>A:</strong> 内置锁的实现和具体的 JVM 有关, 并且可能随着 JVM 的版本不断地优化. 以 HotSpot 为例, 内置锁的获取涉及偏向锁、CAS 指令、自旋锁、OS 级别锁和线程挂起等技术. 在锁争用不太多的情况下, 现代 JVM 对内置锁的优化已经相当好, 加之 JVM 的锁消除、逃逸分析, 编译器的锁粗化等优化措施, 一般不用担心内置锁带来的性能开销.</p>
+<hr>
+<p><strong>Q:</strong> 那为什么还要开发显式锁? 它又是怎么实现的?
+<strong>A:</strong> 内置锁有一些局限, 比如获取过程不能中断、不支持带超时获取、没有定义公平性等, ReentrantLock 作为 Lock 接口的一个实现, 提供了与内置锁一致的同步功能, 并支持了这些高级特性. ReentrantLock 基于 AQS 实现, 底层是 CAS 操作, 因而在刚刚引入时提供了比内置锁明显更好的伸缩性.</p>
+<hr>
+<p><strong>Q:</strong> 那么何不完全用 ReentrantLock 代替内置锁?<br>
+<strong>A:</strong> 内置锁的语法更加紧凑自然, 并且 ReentrantLock 的释放不是自动的, 不当使用会造成错误. 因此建议使用内置锁, 只有需要 ReentrantLock 提供的高级特性时才使用它.</p>
+<hr>
+<p><strong>Q:</strong> 什么是 Java monitor 模式?
+<strong>A:</strong> 一种常用的模式, 将状态封装在一个对象中, 并用对象的内置锁保护这些状态. Java 的内置锁也称 monitor 锁, 甚至对应的字节码指令也叫 monitorenter 和 monitorexit.</p>
+<hr>
+<p><strong>Q:</strong> volatile 变量又有什么作用?
+<strong>A:</strong> volatile 禁止编译器其所修饰变量的读写操作与其它操作进行指令重排, 也不允许缓存产生类似的作用. JSR 133 对内存模型的修订完善了 volatile 的语义, 具体来说, 对 volatile 变量的写操作不能与其之前的任何操作重排序, 对 volatile 变量的读操作不能与其之后的任何操作重排序. 从可见性的角度来说, 写 volatile 变量如同释放锁, 读 volatile 变量如同获取锁.</p>
 <hr>
 <p><strong>Q:</strong> Java 内存模型 (JMM) 是什么?<br>
-<strong>A:</strong> 程序与系统的一个协议, 描述每次读内存操作能够读到哪次写操作的值. JVM、编译器要配合硬件实现这个协议, 程序可以依赖这个协议实现功能. JMM 是相对底层的话题, 即使不了解 JMM, 也可以通过遵循一些简单的法则构造线程安全的程序.</p>
+<strong>A:</strong> 一个协议, 描述对共享内存的每次读操作能够读到哪次写操作的值. JVM、编译器要配合硬件实现这个协议, 程序可以依赖这个协议实现功能. JMM 是相对底层的话题, 即使不了解 JMM, 也可以通过遵循一些简单的法则构造线程安全的程序.</p>
 <hr>
 <p><strong>Q:</strong> JMM 提供了哪些保证?<br>
 <strong>A:</strong></p>
 <ul>
-<li>SC for DRF 保证: 正确同步的程序, 其执行是顺序一致执行. 正确同步程序是指在顺序一致执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是只两个线程的冲突访问没有受到 happens-before 关系约束.</li>
+<li>SC for DRF 保证: 正确同步的程序, 其执行都是顺序一致执行.</li>
 <li>Out-of-Thin-Air 保证: 程序的执行符合因果律, 不会出现无中生有的结果 (即使没有正确同步).</li>
-<li>Final 字段的特殊语义: 实际是补充了 happens-before 关系.</li>
+<li>Final 字段的特殊语义: 观察到某对象构造完成后公布的引用, 则必能观察到其 final 字段的正确值.</li>
 </ul>
+<hr>
+<p><strong>Q:</strong> 怎样才是正确同步的程序?<br>
+<strong>A:</strong> 正确同步的程序是指在顺序一致执行时无数据竞争 (Data Race Free) 的程序, 数据竞争是指两个线程对同一数据的冲突访问没有受到 happens-before 关系约束. Final 字段的特殊语义, 实际上是对 happens-before 关系的补充.</p>
+<hr>
+<p><strong>Q:</strong></p>
 <p>未完待续&hellip;</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a></section><div id="bottom-sticky">
     <a id="gototop"></a>
