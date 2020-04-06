@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 15.原子变量和非阻塞同步&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 15.原子变量和非阻塞同步&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
 <script>
     window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
 </script>
@@ -82,7 +82,7 @@
 </nav>
     </div>
 </section>
-<p><em>原子变量和非阻塞同步</em> 是 Semaphore 等类更好的性能与伸缩性的来源.</p>
+<div class="reset-header" style="--start:0"></div><p><em>原子变量和非阻塞同步</em> 是 Semaphore 等类更好的性能与伸缩性的来源.</p>
 <p><strong>非阻塞算法</strong><br>
 非阻塞算法<em>使用底层的原子机器指令如 compare-and-swap 代替锁</em>来保证数据在并发访问下的完整性, 广泛应用于 OS 和 JVM 中的线程和进程调度、GC 以及实现锁和其它并发数据结构.<br>
 非阻塞算法在设计和实现上更为复杂, 但是带来显著的伸缩性和活跃性优势, 如:</p>

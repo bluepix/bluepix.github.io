@@ -7,10 +7,30 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Fri, 03 Apr 2020 23:21:47 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 07 Apr 2020 01:43:07 +0800</lastBuildDate>
     
         <atom:link href="/categories/%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>[Clean Architecture] 07~11. SOLID 设计原则</title>
+      <link>/notes/clean-architecture/07-11-solid/</link>
+      <pubDate>Tue, 07 Apr 2020 01:43:07 +0800</pubDate>
+      
+      <guid>/notes/clean-architecture/07-11-solid/</guid>
+      <description>作用: 指导模块或组件内部的类及类之间交互的设计 (类指数据和函数的组合, 不特指OO语言中的类), 使软件的中级结构 (mid-level structure) 包容变化 易于理解 使组件可复</description>
+      
+    </item>
+    
+    <item>
+      <title>[Clean Architecture] 01~06. 引论, 编程范式</title>
+      <link>/notes/clean-architecture/01-06-intro-n-paradigms/</link>
+      <pubDate>Mon, 06 Apr 2020 19:54:05 +0800</pubDate>
+      
+      <guid>/notes/clean-architecture/01-06-intro-n-paradigms/</guid>
+      <description>架构的意义 设计与架构 (Design and Architecture) 表面上, 架构关心刈除细节之后的总体图景, 而设计关心实现细节, 但事实上, 两者对立统一, 不可分割. 架构的目标 用最小的人</description>
+      
+    </item>
     
     <item>
       <title>[JCIP] 16.Java 内存模型</title>

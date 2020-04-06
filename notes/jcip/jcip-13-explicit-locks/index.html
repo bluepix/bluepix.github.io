@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 13.显式锁&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.8f8ba51b5342991483ae5947a061f5e6e11573d66833bdcebfed60b0c43330189af8f3224a51440ebe2b2f6d5f64a74f.css" integrity="sha384-j4ulG1NCmRSDrllHoGH15uEVc9ZoM73Ov&#43;1gsMQzMBia&#43;PMiSlFEDr4rL21fZKdP"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<meta name="supported-color-schemes" content="light dark"><title>[JCIP] 13.显式锁&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
 <script>
     window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
 </script>
@@ -42,7 +42,7 @@
 </nav>
     </div>
 </section>
-<h2 id="lock-和-reentrantlock">Lock 和 ReentrantLock</h2>
+<div class="reset-header" style="--start:0"></div><h2 id="lock-和-reentrantlock">Lock 和 ReentrantLock</h2>
 <p>Lock 接口定义了一些抽象锁操作. 与内置锁相比, Lock 接口提供了多个版本不同特性的锁获取方法, 并且所有的锁与解锁都是显式的. Lock 的实现必须提供与内置锁一致的内存可见性语义, 但可以选择不同的锁语义、调度算法、顺序保证和性能特点.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">Lock</span> <span style="color:#f92672">{</span>
     <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">lock</span><span style="color:#f92672">();</span>

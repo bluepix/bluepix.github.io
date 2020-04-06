@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[Clean Architecture] 01~06. 引论, 编程范式&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#架构的意义">架构的意义</a>
+      <ul>
+        <li><a href="#设计与架构-design-and-architecture">设计与架构 (Design and Architecture)</a></li>
+        <li><a href="#架构的目标">架构的目标</a></li>
+        <li><a href="#软件开发的问题">软件开发的问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#软件的两种价值">软件的两种价值</a></li>
+    <li><a href="#编程范式概览">编程范式概览</a>
+      <ul>
+        <li><a href="#三种编程范式简介">三种编程范式简介</a></li>
+        <li><a href="#启示">启示</a></li>
+      </ul>
+    </li>
+    <li><a href="#结构化编程">结构化编程</a></li>
+    <li><a href="#面向对象编程">面向对象编程</a>
+      <ul>
+        <li><a href="#什么是oo">什么是OO？</a></li>
+        <li><a href="#多态的力量">多态的力量</a></li>
+      </ul>
+    </li>
+    <li><a href="#函数式编程">函数式编程</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[Clean Architecture] 01~06. 引论, 编程范式</h1><p class="article date">2020-04-06</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#架构的意义">架构的意义</a>
+      <ul>
+        <li><a href="#设计与架构-design-and-architecture">设计与架构 (Design and Architecture)</a></li>
+        <li><a href="#架构的目标">架构的目标</a></li>
+        <li><a href="#软件开发的问题">软件开发的问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#软件的两种价值">软件的两种价值</a></li>
+    <li><a href="#编程范式概览">编程范式概览</a>
+      <ul>
+        <li><a href="#三种编程范式简介">三种编程范式简介</a></li>
+        <li><a href="#启示">启示</a></li>
+      </ul>
+    </li>
+    <li><a href="#结构化编程">结构化编程</a></li>
+    <li><a href="#面向对象编程">面向对象编程</a>
+      <ul>
+        <li><a href="#什么是oo">什么是OO？</a></li>
+        <li><a href="#多态的力量">多态的力量</a></li>
+      </ul>
+    </li>
+    <li><a href="#函数式编程">函数式编程</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="reset-header" style="--start:0"></div><h2 id="架构的意义">架构的意义</h2>
+<h3 id="设计与架构-design-and-architecture">设计与架构 (Design and Architecture)</h3>
+<p>表面上, 架构关心刈除细节之后的总体图景, 而设计关心实现细节, 但事实上, 两者对立统一, 不可分割.</p>
+<h3 id="架构的目标">架构的目标</h3>
+<p>用最小的人力代价构造和维护所需要的系统.</p>
+<h3 id="软件开发的问题">软件开发的问题</h3>
+<p><strong>问题:</strong> 软件开发在进行过程中效率极速下降, 成本飙升<br>
+<strong>原因:</strong> &ldquo;先上线, 后重构&quot;的盲目自信造成代码的混乱, 应付这种混乱消耗了大量人力.<br>
+<strong>推论:</strong> 只有走得好, 才能走得快 (The only way to go fast, is to go well.)<br>
+<strong>重做?</strong> &ldquo;推翻重做就能做好&rdquo; 的盲目自信最终导致同样混乱的代码.<br>
+<strong>结论:</strong> 重视架构.</p>
+<h2 id="软件的两种价值">软件的两种价值</h2>
+<ul>
+<li><strong>Behaviour</strong> 价值: 满足功能定义或需求文档的要求.</li>
+<li><strong>Structrue</strong> 价值: <em>软</em>件 (<em>Soft</em>ware) 应当易于修改, 修改的难度应当与修改的范围, 而非目标&quot;形状&rdquo; (shape) 相关, 开发中不应对未来的&quot;形状&quot;做假设. 软件的这一价值体现在良好的架构上.</li>
+</ul>
+<p><strong>谁更重要?</strong><br>
+易于修改更重要. 功能缺失但易于修改的软件尚有价值, 功能齐全但无法修改的软件终将毫无价值 (当修改软件的成本大于修改带来的好处, 软件事实上已无法修改).<br>
+架构体现的价值往往属于不紧急但极为重要的象限, 开发者应当 fight for the architecture.</p>
+<h2 id="编程范式概览">编程范式概览</h2>
+<h3 id="三种编程范式简介">三种编程范式简介</h3>
+<h4 id="结构化编程-structured-programming">结构化编程 (Structured Programming)</h4>
+<ul>
+<li>取消了无限制的goto跳转, 只用 if/then/else 和 do/while/until 模式实现控制跳转.</li>
+<li><em>规范了控制的直接跳转</em>.</li>
+</ul>
+<h4 id="面向对象编程-object-oriented-programming">面向对象编程 (Object-Oriented Programming)</h4>
+<ul>
+<li>缘起: 当ALGOL函数调用的栈帧移动到堆上
+<ul>
+<li>函数声明的本地变量 -&gt;  (长期存在的) 类成员变量</li>
+<li>函数本身 -&gt; 类构造函数</li>
+<li>嵌套函数 -&gt; 类方法</li>
+<li>函数指针的规范化使用 -&gt; 多态</li>
+</ul>
+</li>
+<li><em>规范了控制的间接跳转</em>.</li>
+</ul>
+<h4 id="函数式编程-functional-programming">函数式编程 (Functional Programming)</h4>
+<ul>
+<li>Immutability: 符号的值不变, 即要求没有赋值语句. 事实上多数函数式编程语言允许修改变量的值, 但是有严格的限制.</li>
+<li><em>规范了赋值</em>.</li>
+</ul>
+<h3 id="启示">启示</h3>
+<ul>
+<li>结构化编程带走了goto, OOP带走了函数指针, 函数式编程带走了赋值, <em>编程范式始终在告诉我们别做什么</em>.</li>
+<li>借助多态穿越架构的边界, 借助函数式编程规范了数据的访问, 函数则是模块的算法基础: 编程范式的发展全都关于架构, 关注着与架构有关的三个问题: 函数, 组件划分, 数据管理.</li>
+</ul>
+<h2 id="结构化编程">结构化编程</h2>
+<p>Edsger Wybe Dijkstra (艾兹赫尔·韦伯·戴克斯特拉) 试图仿照数学为软件开发建立欧几里德式公理体系, 从而使程序的正确性是<em>可证明</em> (provable) 的. Dijkstra 发现, goto 语句的某些使用方式, 导致程序无法划分为更小模块, 以便用分治法证明其正确性, 在去除这种goto语句后, 只使用 if/then/else 和 do/while/until 控制的程序, 可以递归得划分为更小的可证明单元.<br>
+先此两年, Böhm 和 Jacopini 已经证明, 所有程序都可以用顺序 (sequence) 、选择 (selection) 、遍历 (iteration) 三种结构的组合来表示, 这与 Dijkstra 证明程序的需求不谋而合, 由此诞生了结构化编程.<br>
+1968 年, Dijkstra 发表了 Go To Statement Considered Harmful, 引发了近十年的论战, 最终 Dijkstra 获胜: 如今几乎所有现代语言都不支持 goto 语句, 或严格限制其使用.<br>
+结构化分析和设计在 20 世纪七八十年代流行和发展. 在结构化编程中, 开发者可以将复杂系统逐步解耦为较小的可证明函数.<br>
+Dijkstra 通过简单枚举证明程序的顺序和选择部分的正确性, 通过归纳法证明遍历部分的正确性. 然而公理体系最终没有建立起来, 人们发现, <em>软件开发的性质更接近于科学而非数学</em>, 数学要求可证明, 而科学要求<em>可证伪</em> (意味着可测试) , 测试不是证明错误不存在, 而是试图证明错误存在的过程, 在充分测试中没有出现错误, 则证明程序 &ldquo;足够&rdquo; 正确, 当然, 这样的证明也必须针对可以这样证明的程序, 这是结构化编程所解决的问题.</p>
+<h2 id="面向对象编程">面向对象编程</h2>
+<h3 id="什么是oo">什么是OO？</h3>
+<p><strong><del>数据与函数的结合?</del></strong><br>
+o.f()与f(o)并无本质不同, 向函数传递数据结构的做法存在已久.</p>
+<p><strong><del>一种为真实世界建模的方法?</del></strong><br>
+模棱两可, 不能说明什么是 OO.</p>
+<p><strong>封装、继承和多态?</strong><br>
+<em>不准确.</em></p>
+<ul>
+<li>封装 (Encapsulation)
+<ul>
+<li>C 作为结构化编程语言能实现完美的封装: 头文件中声明接口和数据类型, 而实现都置于源文件中, 对使用者完全隐藏.</li>
+<li>C++ 中, 这种完美的封装被打破了: 由于编译器需要知道每个类的实例的大小, 类的成员变量必须声明在头文件中, 暴露给了使用者, 不得不通过引入 public、private、protected 修饰符来部分修复对封装的破坏.</li>
+<li>Java 和 C# 则取消了头文件, 完全无法分离类的声明与实现, 进一步弱化了封装.</li>
+<li>很多 OO 语言甚至没有强制的封装.</li>
+<li>结论: <em>OO的定义不依赖于封装</em>.</li>
+</ul>
+</li>
+<li>继承 (Inheritance)
+<ul>
+<li>C 语言可以通过简单的增加字段+强制转换指针类型实现单继承.</li>
+<li>但面向对象语言中, 继承的实现更方便 (包括多继承) , 向父类的转换是隐式的.</li>
+<li>结论: <em>继承不是OO引入的全新概念, 但OO的确改善了继承</em>.</li>
+</ul>
+</li>
+<li>多态 (Polymorphism)
+<ul>
+<li>使用函数指针实现多态的做法由来已久.</li>
+<li><em>OO 规范了控制的间接跳转, 实现了安全的多态</em>.</li>
+</ul>
+</li>
+</ul>
+<h3 id="多态的力量">多态的力量</h3>
+<p><strong>插件化的优点</strong>: 以 Unix 的 I/O 设备为例, 设备通过实现 5 个标准函数成为操作系统的插件 (plugin) , 系统独立于设备, 在更换设备时不需要修改和重新编译系统.<br>
+插件化架构应用的障碍之一是函数指针的危险性, 而 OO 提供的安全多态消除了这一障碍.</p>
+<p><strong>依赖倒置</strong> (Dependency Inversion)</p>
+<ul>
+<li>在没有多态的情况下, 各个模块的依赖关系只能与控制流向相同: 调用者 (caller) 所在模块必须依赖受调用者 (callee) 所在的模块, 即依赖是自顶向下的, 上层模块代码中必须通过include (import、using&hellip;) 包含底层模块的名字, 因此更换底层模块必须重新编译上层模块.</li>
+<li>运用多态可以实现: 在运行时, 上层模块仍然 (间接地) 调用底层模块的功能 (控制流向不变) , 但在代码中, 不再是上层模块依赖于特定的底层模块, 而是底层模块依赖于上层接口定义, 依赖的方向发生了变化.</li>
+<li><em>安全的多态机制使得开发者可以自由的选择代码依赖的方向, 至少对于架构师来说, 这是 OO 真正的意义所在</em>.</li>
+<li>通过依赖倒置, 业务代码不必依赖特定的功能代码, 业务规则和功能实现可以编译为分离的模块 (components) 或分发单元 (deployment units) , 业务模块不依赖于特定的功能模块, 实现功能模块的可独立分发 (independent deployability) 和可独立开发 (independent developability).</li>
+</ul>
+<h2 id="函数式编程">函数式编程</h2>
+<p>函数式编程概念的出现比编程本身还要早, 可上溯到 Alonzo Church 发明的 λ-caculus.<br>
+函数式语言中变量的值不可修改, 从根源上避免了可变状态引起的竞态条件、死锁、并发更新等问题. 一个良好的架构中, 程序被隔离 (segregated) 成多个完全不包含可修改变量的组件 (Immutable components) 和包含可修改变量的组件 (Mutable components), Immutable 组件是天然并发安全的, Mutable 组件则需要一些外部机制来保证并发安全, 如通过某种事务内存 (Transactional Memory) 来保护变量的并发访问. 架构应尽可能将处理放到 Immutable 组件中.<br>
+<strong>事件溯源</strong> (Event Sourcing): 一种没有可修改变量的架构, 基本思想是将状态的每次变化作为事件记录下来, 通过事件的累加可以重建任何历史状态.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/%E6%9E%B6%E6%9E%84/>架构</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/clean-architecture/07-11-solid/"><span class="li">&larr;</span>[Clean Architecture] 07~11. SOLID 设计原则</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>
