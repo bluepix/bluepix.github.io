@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[Clean Architecture] 20~29. 架构 (二)&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#业务规则-business-rules">业务规则 (Business rules)</a></li>
+    <li><a href="#尖叫的架构-screaming-architecture">尖叫的架构 (Screaming Architecture)</a></li>
+    <li><a href="#整洁架构-the-clean-architecture">整洁架构 (The Clean Architecture)</a>
+      <ul>
+        <li><a href="#一些典型架构">一些典型架构</a></li>
+        <li><a href="#整洁架构">整洁架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#presenter-和简陋对象-humble-object">Presenter 和简陋对象 (Humble Object)</a>
+      <ul>
+        <li><a href="#humble-object-模式">Humble Object 模式</a></li>
+        <li><a href="#几个例子">几个例子</a></li>
+        <li><a href="#架构意义">架构意义</a></li>
+      </ul>
+    </li>
+    <li><a href="#部分边界-partial-boundary">部分边界 (Partial Boundary)</a>
+      <ul>
+        <li><a href="#跳过最后一步">跳过最后一步</a></li>
+        <li><a href="#一维化边界-one-dementional-boundary">一维化边界 (One-Dementional Boundary)</a></li>
+        <li><a href="#门面-facades">门面 (Facades)</a></li>
+      </ul>
+    </li>
+    <li><a href="#层-layers-与边界-boundaries">层 (Layers) 与边界 (Boundaries)</a></li>
+    <li><a href="#主组件-the-main-component">主组件 (The Main Component)</a></li>
+    <li><a href="#服务">服务</a></li>
+    <li><a href="#测试边界">测试边界</a>
+      <ul>
+        <li><a href="#作为系统组件的测试">作为系统组件的测试</a></li>
+        <li><a href="#开发可测试的系统">开发可测试的系统</a></li>
+        <li><a href="#测试-api">测试 API</a></li>
+      </ul>
+    </li>
+    <li><a href="#嵌入式整洁架构-clean-embedded-architecture">嵌入式整洁架构 (Clean Embedded Architecture)</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[Clean Architecture] 20~29. 架构 (二)</h1><p class="article date">2020-04-07</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#业务规则-business-rules">业务规则 (Business rules)</a></li>
+    <li><a href="#尖叫的架构-screaming-architecture">尖叫的架构 (Screaming Architecture)</a></li>
+    <li><a href="#整洁架构-the-clean-architecture">整洁架构 (The Clean Architecture)</a>
+      <ul>
+        <li><a href="#一些典型架构">一些典型架构</a></li>
+        <li><a href="#整洁架构">整洁架构</a></li>
+      </ul>
+    </li>
+    <li><a href="#presenter-和简陋对象-humble-object">Presenter 和简陋对象 (Humble Object)</a>
+      <ul>
+        <li><a href="#humble-object-模式">Humble Object 模式</a></li>
+        <li><a href="#几个例子">几个例子</a></li>
+        <li><a href="#架构意义">架构意义</a></li>
+      </ul>
+    </li>
+    <li><a href="#部分边界-partial-boundary">部分边界 (Partial Boundary)</a>
+      <ul>
+        <li><a href="#跳过最后一步">跳过最后一步</a></li>
+        <li><a href="#一维化边界-one-dementional-boundary">一维化边界 (One-Dementional Boundary)</a></li>
+        <li><a href="#门面-facades">门面 (Facades)</a></li>
+      </ul>
+    </li>
+    <li><a href="#层-layers-与边界-boundaries">层 (Layers) 与边界 (Boundaries)</a></li>
+    <li><a href="#主组件-the-main-component">主组件 (The Main Component)</a></li>
+    <li><a href="#服务">服务</a></li>
+    <li><a href="#测试边界">测试边界</a>
+      <ul>
+        <li><a href="#作为系统组件的测试">作为系统组件的测试</a></li>
+        <li><a href="#开发可测试的系统">开发可测试的系统</a></li>
+        <li><a href="#测试-api">测试 API</a></li>
+      </ul>
+    </li>
+    <li><a href="#嵌入式整洁架构-clean-embedded-architecture">嵌入式整洁架构 (Clean Embedded Architecture)</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="reset-header" style="--start:19"></div><h2 id="业务规则-business-rules">业务规则 (Business rules)</h2>
+<p>严格来说, 业务规则是指能创造效益或节约成本的规则 (make or save money).</p>
+<p><strong>关键业务规则 (Critical business rules)</strong><br>
+关键业务规则是指那些由业务本身决定, 即使不依赖自动化系统, 仍然起作用的规则, 比如银行利息的计算.<br>
+关键业务规则需要一些相关的数据, 称为关键业务数据, 这些数据即使不使用自动化系统, 仍然存在.</p>
+<p><strong>实体 (Entities)</strong><br>
+关键业务规则和关键业务数据总是绑定在一起, 将相关的一小部分关键业务规则和关键业务数据封装在一起形成的对象, 称之为实体.<br>
+实体对象包含了关键业务数据, 或者可以很方便的访问关键业务数据, 而其接口则包含实现关键业务规则的函数.<br>
+实体对象将其所表示的关键业务规则从系统其他部分中分离出来, 不包含任何细节, 因而可以用于任何需要此规则的系统.</p>
+<p><strong>用例 (Use cases)</strong><br>
+用例是应用相关 (application-specific) 的业务规则. 用例定义了如何触发包含在实体中的关键业务规则, 控制着实体之舞.<br>
+用例同样不描述用户 UI、数据存储等业务无关的细节.<br>
+用例是一个对象, 包含一个或多个应用相关业务规则的函数实现, 还可能包含输入输出数据的定义, 以及其所操作的实体的引用.<br>
+用例处理请求 (Request) , 输出响应 (Response). 请求和响应应该是简单的数据结构, 不依赖于任何其他组件、框架等, 否则就会导致用例本身对其他组件的依赖. 根据 CCP 和 SRP 原则, 用例的请求和响应即使和实体有很多字段重合, 也不应共用或相互引用.</p>
+<h2 id="尖叫的架构-screaming-architecture">尖叫的架构 (Screaming Architecture)</h2>
+<p><strong>用例和框架</strong><br>
+<em>架构给人的第一个印象应该是系统的功用</em>, 而不是使用了什么框架 (Framework). 好的架构应当<em>基于用例、描述用例、满足用例</em>, 而不应当绑定到某一特定的框架, 框架应当是可推迟或延迟决定的选项.</p>
+<p><strong>Web?</strong><br>
+Web不是架构, 是应当可以延迟的选项.</p>
+<p><strong>可测试的架构</strong>
+如果架构基于用例, 并且与框架保持应有的距离, 所有的用例就可以在脱离特定框架的条件下单元测试.</p>
+<h2 id="整洁架构-the-clean-architecture">整洁架构 (The Clean Architecture)</h2>
+<h3 id="一些典型架构">一些典型架构</h3>
+<ul>
+<li>六边形架构 (Hexagonal Architecture, 或成为Ports and Adapters)</li>
+<li>DCI</li>
+<li>BCE</li>
+</ul>
+<p><strong>共同点</strong></p>
+<ul>
+<li><strong>目的:</strong> 关注点的分离 (Separate of Concerns).</li>
+<li><strong>手段:</strong> 将软件划分为层, 至少有一层用于处理业务规则, 有一层负责用户与系统的界面.</li>
+<li><strong>特点</strong>
+<ul>
+<li>独立于框架 (frameworks)</li>
+<li>可测试: 业务规则可以独立测试</li>
+<li>独立于UI: UI可随意替换</li>
+<li>独立于数据库: 数据库可随意替换</li>
+<li>独立于任何外置代理: 业务规则对接口外的世界一无所知</li>
+</ul>
+</li>
+</ul>
+<h3 id="整洁架构">整洁架构</h3>
+<p>综合以上架构:
+<span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  ><img class="img" src="clean-architecture.jpg?width=500"
+        alt width="500"
+        /></a></span></span></p>
+<ul>
+<li>划分规则: 内部是高级别策略, 外部是低级别机制.</li>
+<li>依赖规则: 源代码依赖必须由外向内, 指向高级别策略.
+<ul>
+<li>外层组件定义的任何名字 (包括类名、函数名、变量名等) , 不能再在内层组件代码中提及.</li>
+<li>外层组件定义的数据格式, 内层组件不能使用.</li>
+</ul>
+</li>
+</ul>
+<p><strong>逐层解析</strong></p>
+<ul>
+<li>实体层 (Entities)
+<ul>
+<li>封装关键业务规则, 体现程序的业务目标.</li>
+<li>是最通用和高级别的规则.</li>
+<li>是变化可能性最小的部分.</li>
+</ul>
+</li>
+<li>用例层 (Use Cases)
+<ul>
+<li>是程序相关的业务规则, 封装和实现系统的全部用例.</li>
+<li>管理数据流入和流出实体层, 调动实体层使用关键业务规则实现用例.</li>
+<li>用例修改不应影响实体层, 外层修改也不应影响用例层.</li>
+<li>若程序的操作方式发生改变, 用例层需要做相应修改.</li>
+</ul>
+</li>
+<li>接口适配层 (Interface Adapters)
+<ul>
+<li>包含一组适配器, 处理数据在内部两层适用的格式和外部代理以及持久性框架 (如数据库、Web) 使用的格式之间的转换,</li>
+<li>如: GUI程序架构中的整个 MVC 架构, presenters、views、controllers 都属于这层, models 则是只是 controllers 向用例传递或从用例返回给presenters 和 views 的数据.</li>
+<li>如: 数据库的访问应该限制在这一层, 将数据库查询到的结果转换为用例层和实体层适用的格式.</li>
+</ul>
+</li>
+<li>框架和驱动层 (Frameworks)
+<ul>
+<li>由框架、工具 (如数据库、Web框架) 等细节组成.</li>
+<li>一般只包含一些用于与内层通信的胶水代码.</li>
+</ul>
+</li>
+</ul>
+<p><strong>层数问题</strong><br>
+架构可能根据需要多于4层, 不变的是依赖原则: 依赖永远指向内层, 越向内, 组件的抽象级别和策略级别越高.</p>
+<p><strong>穿越边界</strong><br>
+在必要的时候, 需要恰当的利用 DIP 使源码依赖方向与控制流动方向相反, 以保持向内依赖. 例如: controller 对 use case 的操作, 依赖方向与数据流动方向相同, 而 use case 对 presenter 的调用则必须通过接口 (use case output port).<br>
+穿越边界的数据形式: 可以是简单类型、Map 或对象, 但应当是最便于内层组件使用的形式, <em>不应依赖于外层组件</em>. 例如: 很多数据库框架在查询时会返回一个&quot;行&quot;结构, 如果允许直接将此结构传递给内层组件, 就会使内层组件不必要的依赖于特定框架.</p>
+<p><strong>典型场景</strong>
+<span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  ><img class="img" src="typical-scenario.png?width=500"
+        alt width="500"
+        /></a></span></span></p>
+<p>Controller 收集用户输入的数据, 打包为 POJO, 通过 Input Boundary 传递给 Use Case Interactor, 后者解析数据, 据此控制 Entities 完成关键业务操作, 在此过程中通过 Data Access Interface 读取需要的数据, 最终收集 Entities 生成的数据打包为 POJO, 通过 Output Boundary 传递给 Presenter, Presenter 将数据重新打包为可直接显示的 POJO, 即 View Model, 交给 View 显示.<br>
+注意所有依赖都遵守依赖规则, 凡是穿过边界的依赖都指向内侧.</p>
+<h2 id="presenter-和简陋对象-humble-object">Presenter 和简陋对象 (Humble Object)</h2>
+<h3 id="humble-object-模式">Humble Object 模式</h3>
+<p>最初用于将难以测试的部分和易于测试的部分分离开, 以帮助单元测试顺利进行. 方法是将软件行为分为两个模块或类</p>
+<ul>
+<li>简陋 (Humble) 的部分: 包含所有难以测试的行为, 但剥离了一切对这部分行为不是必要的其他部分.</li>
+<li>可测试 (Testable) 的部分.</li>
+</ul>
+<h3 id="几个例子">几个例子</h3>
+<h4 id="presenter-和-view">Presenter 和 View</h4>
+<ul>
+<li><strong>划分前提:</strong> GUI 是难以测试的, 使用自动化手段去查看 GUI 是否显示正确成本较高, 但是 GUI 的多数行为本身其实是易于测试的.</li>
+<li><strong>Humble 部分:</strong> View, 仅仅负责将 Presenter 处理好的数据 (用简单对象 View Model 表示) 展示到界面上, 不进行任何数据处理.</li>
+<li><strong>Testable 部分:</strong> Presenter, 负责准备好一切View展示需要的数据, 置于 View Model 中, 如: 将对象类型格式化为可直接显示的字符串, 生成按钮的名字、列表的数据项、可用状态标志、颜色等. 注意这个例子: 如果某个数字在小于 0 时要显示为红色, 那么应该由 Presenter 决定其颜色, 并在 View Model 中用一个变量表示, View 本身不应该产生可见数据.</li>
+</ul>
+<h4 id="数据库门户-database-gateway">数据库门户 (Database Gateway)</h4>
+<p>指插在用例交互和数据库访问实现之间的数据访问接口. 用例层通过这些接口访问数据.<br>
+数据库访问实现是 Humble 的, 仅仅负责依据接口要求调用相应的数据库存取接口 (如执行SQL语句).<br>
+用例交互不是 Humble 的, 因为包含了程序相关的业务规则, 但它们是可测试的.</p>
+<h4 id="数据映射器-data-mapper">数据映射器 (Data Mapper)</h4>
+<p>ORM正名: 对象 (Object) 不是数据, 至少对于其使用者来说, 对象是由其公共接口定义的, 是一组操作的集合. 而一个数据结构 (Data Structure) 则是一组公共的数据成员, 没有任何内在行为. 因此比ORM (Object Relational Mapper) 更恰当的名字应该是 Data Mapper.<br>
+Data Mapper 应当在数据库层, 形成数据库门户与数据库之间的另一种 Humble 边界.</p>
+<h4 id="服务级交互">服务级交互</h4>
+<p>在输出端, 程序 (Testable) 将数据加载到简单的数据结构中, 这些结构穿过边界递交给 Humble 的模块, 这些模块仅仅负责将这些准备好的数据以规定格式发送出去.<br>
+在输入端, 服务监听器仅仅负责接受数据, 解析为简单数据结构, 并递交给程序处理.</p>
+<h3 id="架构意义">架构意义</h3>
+<p>Humble 和 Testable 部分的划分经常定义了架构上的边界, 几乎在所有的架构边界附近都存在着这种模式: 穿越边界的总是某种简单数据结构, 而边界经常划分出难以测试和易于测试的两部分, 这种划分极大提升了系统的可测试性.</p>
+<h2 id="部分边界-partial-boundary">部分边界 (Partial Boundary)</h2>
+<p>完全成熟的架构边界要隔离出可独立编译和部署的组件, 其建立和维护都需要大量工作, 但出于将来可能需要的考虑, 架构师常常会选择实现部分边界. 部分边界有很多种形式, 以下是三个例子</p>
+<h3 id="跳过最后一步">跳过最后一步</h3>
+<p>这种方式完成了所有隔离可独立编译与部署组件的工作, 但仍将它们放在同一个组件中. 这种方式中建立和维护边界的工作没有减少, 但省去了管理多个组件的负担 (如版本号跟踪和发布管理). 这种方式的风险在于: 随着划分组件的必要性逐渐降低, 边界可能越来越模糊.</p>
+<h3 id="一维化边界-one-dementional-boundary">一维化边界 (One-Dementional Boundary)</h3>
+<p>完整的边界需要两侧都有倒置边界接口, 成本较高, 可以选择只实现一侧接口, 实现单侧的隔离. 其风险在于: 没有接口的一侧边界完全靠开发者自律维护, 很可能迅速退化.</p>
+<h3 id="门面-facades">门面 (Facades)</h3>
+<p>进一步省去了依赖倒置, 边界完全由 Facade 类定义, Facade 维护了一系列服务, 客户端直接与 Facade 通信. 这种方式中客户端间接依赖了服务实现, 在静态语言中, 当任意服务发生修改时, 需要重新编译客户端. 并且很容易出现反向穿越边界的行为.</p>
+<h2 id="层-layers-与边界-boundaries">层 (Layers) 与边界 (Boundaries)</h2>
+<p>架构边界无所不在, 一方面, 实现这些边界是有成本的, 另一方面, 如果早期忽视了这些边界, 在需要时添加可能要付出更多成本. 架构师的职责是观察、判断, 决定哪些边界是必需的, 那些应部分实现, 哪些可以忽略. 并且要关注系统的进化, 选择实现边界的恰当时机 (实现成本低于忽略成本的时候).</p>
+<h2 id="主组件-the-main-component">主组件 (The Main Component)</h2>
+<p>每个系统中都存在至少一个主组件, 负责创建、协调和监控其他组件.<br>
+终极细节: 主组件是细节中的细节, 是等级最低的策略, 位于 Clean Architecture 的最外围, 是所有 dirty 组件中最 dirty 的一个, 系统中没有任何组件依赖它. 唯一依赖主组件的是操作系统.<br>
+主组件的可能工作包括: 创建所有的 Factories、Strategies 及其他全局设施, 接受 DI 框架注入的依赖实现, 用普通的方式分发这些依赖. 完成这些工作后主组件将控制权移交给高级组件.<br>
+将主组件看成一个插件, 可以容易的为每个配置创建不同的插件.</p>
+<h2 id="服务">服务</h2>
+<p><strong>一个误解: 服务是架构</strong><br>
+真正定义架构的是将高级别策略与低级别细节划分开的边界, 并且穿越边界的方向遵循依赖规则. 而服务可类比于函数调用, 单纯的将程序不同行为划分开没有架构意义.</p>
+<p><strong>两个谬误</strong></p>
+<ul>
+<li>服务 = 解耦.<br>
+服务运行在不同的进程, 不能直接访问彼此的变量, 接口也必须有良好定义, 这带来了一些好处. 但服务仍然共享同一处理器或网络上的资源, 服务与它们共享的数据耦合, 因此间接相互耦合, 服务并没有提供比函数调用更强的解耦能力.</li>
+<li>服务 = 可独立开发和部署, 因而可以提供良好的伸缩性 (Scalablity)<br>
+经验证明大型企业系统可以不基于服务构建仍具有良好伸缩性. 因为服务 ≠ 解耦, 因此基于服务的程序未必能够独立开发和部署.</li>
+</ul>
+<p><strong>横切性 (Cross-cutting) 需求</strong>
+涉及到系统各个方面功能的需求, 按照功能分解的系统难以应对这种需求.</p>
+<p><strong>解决: 基于组件的服务</strong>
+单个服务不必是单体结构的, 而可以基于组件, 依据 SOLID 原则设计, 使得新的组件可以在不修改既有组件的条件下加入. 架构的边界并不是服务之间的边界, 而是穿过这些服务, 将服务划分为组件.</p>
+<h2 id="测试边界">测试边界</h2>
+<h3 id="作为系统组件的测试">作为系统组件的测试</h3>
+<p>从架构角度讲, 所有类型的测试都是等同的.</p>
+<ul>
+<li>测试都遵守依赖规则, 是细节、具体的, 居于系统的最外层, 向内依赖其他组件.</li>
+<li>测试是可独立部署的.</li>
+</ul>
+<h3 id="开发可测试的系统">开发可测试的系统</h3>
+<p>忽视测试是系统设计的一部分, 可能导致脆弱 (fragile) 的测试, 进而导致系统的僵化. 测试作为系统的一部分, 其设计遵循同样的规则: 不要依赖易变的东西, 如 GUI.</p>
+<h3 id="测试-api">测试 API</h3>
+<ul>
+<li>测试 AP I用于测试验证所有的业务规则.</li>
+<li>测试 API 具有允许测试绕过安全限制、昂贵资源 (如数据库) 使系统直接进入特定可测试状态的超级能力.</li>
+<li>测试 API 是 UI 所使用的 Interactors 和 interface adapters 组合的超集.</li>
+<li>测试 API 的目的是将测试与应用从结构上解耦 (structural decoupling), 测试 API 向测试隐藏了应用的结构, 使得两者可以分别重构和演进. 随着时间流逝, 测试会变得越来越具体和特殊, 而应用则越来越通用和抽象, 结构的耦合会妨碍这种正常演进.</li>
+<li>需要注意, 由于测试API可以绕过权限限制, 出于安全性考虑, 在必要时应将测试API及不安全的实现放在独立组件中</li>
+</ul>
+<h2 id="嵌入式整洁架构-clean-embedded-architecture">嵌入式整洁架构 (Clean Embedded Architecture)</h2>
+<p><strong>软件 (software) 与固件 (firmware)</strong></p>
+<ul>
+<li>软件可以具有较长的生命周期.</li>
+<li>固件会随着固件的演进过时.</li>
+<li>软件若没有管理好对特定硬件、平台的依赖, 导致无法在硬件淘汰过程中适应新的硬件, 则软件实质上成了固件.</li>
+<li>应当避免编写固件.</li>
+</ul>
+<p><strong>开发三步, 同样适用于嵌入式开发</strong></p>
+<ol>
+<li>先实现 (First make it work).</li>
+<li>再做对 (Then make it right): 重构代码使其易于理解, 易于演进. 这是经常被忽略的重要一步.</li>
+<li>再做快 (Then make it fast): 做必要的性能优化.</li>
+</ol>
+<p><strong>目标硬件瓶颈 (target-hardware bottleneck)</strong>
+如果软件没有恰当的管理对硬件的依赖, 只能在特定的硬件上运行, 这种依赖就会成为开发、测试、演进的瓶颈.</p>
+<p><strong>整洁的嵌入式架构是可测试的</strong></p>
+<ul>
+<li>三层结构: 简单地可以分为硬件、固件、软件三层. 硬件的界限是天然存在的, 软件和固件之间的界限是模糊的, 如果没有维护好这个界限, 就可能使硬件之外的整个系统实际上成为固件, 测试成本极高.</li>
+<li>硬件是细节: 开发者需要确定固件和软件之间的分界线, 这条线就是 HAL 层 (Hardware abstraction layer) . HAL 层为软件服务, 其 API 应当为软件的需求定制, HAL 层同时应向软件隐藏硬件细节.</li>
+</ul>
+<p><strong>向HAL使用者隐藏硬件细节</strong><br>
+基于HAL层可以实现软件脱离目标硬件测试.</p>
+<p>处理器是细节</p>
+<ul>
+<li>特定于硬件平台的编译链可能提供某种 &ldquo;便利&rdquo;, 如以类似全局变量的形式直接访问处理器寄存器、I/O 端口、中断控制器等处理器功能, 一旦使用这些便利, 看上去像 C 的代码就不再是 C 了, 无法再在其他平台上编译, 或者说, 这部分代码成为了固件.</li>
+<li>姑且认为这些是为了提供帮助, 我们也应该限制其使用范围, 尽量减少其使用, 并且只在固件中使用.
+<ul>
+<li>在软件实现代码中应引用标准头文件, 如果平台提供了特定的头文件, 应尽量将其转换为可以标准头文件路径引用的形式.</li>
+<li>固件代码中难以避免这些特殊 API 的使用, 这时可以考虑实现某种 PAL &ndash; Processor Abstraction Layer, PAL 之上的固件独立于处理器, 可脱离目标硬件测试.</li>
+</ul>
+</li>
+</ul>
+<p>操作系统是细节</p>
+<ul>
+<li>如果嵌入式程序运行于某个嵌入式操作系统上, (四层结构, OS 层插入到固件和软件之间) , 则需要一个 OSAL 层来隔离操作系统的细节, 包括操作系统提供的能力和操作原语. OSAL 使得软件可以脱离具体操作系统测试, 可以更方便地移植到新的操作系统.</li>
+</ul>
+<p><strong>面向接口和可替换性 (substituablity) 开发</strong><br>
+使用接口来完成模块间的交互, 则模块是可替换的, 是可以脱离测试的.</p>
+<p><strong>条件编译</strong><br>
+代码中大量出现关于平台类型的条件编译是违反 DRY (Donnot repeat yourself) 原则的, 应当考虑实现 HAL 层, 用链接器或某种运行时绑定机制代替条件编译来实现软硬件的连接.</p>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/%E6%9E%B6%E6%9E%84/>架构</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/clean-architecture/15-19-architecture-1/"><span class="li">&rarr;</span>[Clean Architecture] 15~19. 架构 (一)</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

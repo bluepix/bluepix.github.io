@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[Clean Architecture] 15~19. 架构 (一)&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是架构架构师做什么">什么是架构/架构师做什么</a></li>
+    <li><a href="#独立-independence">独立 (Independence)</a>
+      <ul>
+        <li><a href="#保持选项开放">保持选项开放</a></li>
+        <li><a href="#层的解耦-decoupling-layer">层的解耦 (decoupling layer)</a></li>
+        <li><a href="#用例的解耦">用例的解耦</a></li>
+        <li><a href="#解耦模式-decoupling-mode">解耦模式 (decoupling mode)</a></li>
+        <li><a href="#独立开发">独立开发</a></li>
+        <li><a href="#独立部署">独立部署</a></li>
+        <li><a href="#关于重复-duplication">关于重复 (duplication)</a></li>
+        <li><a href="#再谈解耦模式">再谈解耦模式</a></li>
+      </ul>
+    </li>
+    <li><a href="#边界boundaries">边界(Boundaries)</a>
+      <ul>
+        <li><a href="#软件架构是划线的艺术">软件架构是划线的艺术</a></li>
+        <li><a href="#何处画线">何处画线?</a></li>
+        <li><a href="#连线的方向">连线的方向</a></li>
+      </ul>
+    </li>
+    <li><a href="#边界剖析">边界剖析</a>
+      <ul>
+        <li><a href="#边界形式一-单体结构中的边界">边界形式一: 单体结构中的边界</a></li>
+        <li><a href="#边界形式二-部署级组件">边界形式二: 部署级组件</a></li>
+        <li><a href="#边界形式三-本地进程">边界形式三: 本地进程</a></li>
+        <li><a href="#边界形式四-服务">边界形式四: 服务</a></li>
+      </ul>
+    </li>
+    <li><a href="#策略和等级-policy-and-level">策略和等级 (Policy and Level)</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[Clean Architecture] 15~19. 架构 (一)</h1><p class="article date">2020-04-07</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是架构架构师做什么">什么是架构/架构师做什么</a></li>
+    <li><a href="#独立-independence">独立 (Independence)</a>
+      <ul>
+        <li><a href="#保持选项开放">保持选项开放</a></li>
+        <li><a href="#层的解耦-decoupling-layer">层的解耦 (decoupling layer)</a></li>
+        <li><a href="#用例的解耦">用例的解耦</a></li>
+        <li><a href="#解耦模式-decoupling-mode">解耦模式 (decoupling mode)</a></li>
+        <li><a href="#独立开发">独立开发</a></li>
+        <li><a href="#独立部署">独立部署</a></li>
+        <li><a href="#关于重复-duplication">关于重复 (duplication)</a></li>
+        <li><a href="#再谈解耦模式">再谈解耦模式</a></li>
+      </ul>
+    </li>
+    <li><a href="#边界boundaries">边界(Boundaries)</a>
+      <ul>
+        <li><a href="#软件架构是划线的艺术">软件架构是划线的艺术</a></li>
+        <li><a href="#何处画线">何处画线?</a></li>
+        <li><a href="#连线的方向">连线的方向</a></li>
+      </ul>
+    </li>
+    <li><a href="#边界剖析">边界剖析</a>
+      <ul>
+        <li><a href="#边界形式一-单体结构中的边界">边界形式一: 单体结构中的边界</a></li>
+        <li><a href="#边界形式二-部署级组件">边界形式二: 部署级组件</a></li>
+        <li><a href="#边界形式三-本地进程">边界形式三: 本地进程</a></li>
+        <li><a href="#边界形式四-服务">边界形式四: 服务</a></li>
+      </ul>
+    </li>
+    <li><a href="#策略和等级-policy-and-level">策略和等级 (Policy and Level)</a></li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="reset-header" style="--start:14"></div><h2 id="什么是架构架构师做什么">什么是架构/架构师做什么</h2>
+<p>架构师不脱离代码工作, 因为不能脱离问题去解决问题.</p>
+<p><strong>架构的目的和策略</strong><br>
+架构是构建者赋予软件系统的形态, 包括组件的划分、配置和组件之间的通信. 形态的设计目的是使软件系统易于开发、部署、运行和维护, 最小化系统生命期成本, 最大化开发人员效率.</p>
+<ul>
+<li>开发 (development): 团队结构会影响软件架构, 单一的小团队往往不喜欢架构施加的限制, 倾向于共同开发单体式的系统, 忽视定义良好的组件和接口;而由数个小组开发的系统, 常常简单地每组对应开发一个组件, 尽管这未必是架构的最优解.</li>
+<li>部署 (deployment): 部署是软件价值实现的前提, 架构设计应以仅需一个动作高效部署 (easily deployed with a single action) 为目的, 这往往在系统设计初期被忽视.</li>
+<li>运行 (operation): 一般来说架构对系统的影响比对其他方面影响要小, 运行问题往往可以通过加硬件来解决. 但仍然期望架构设计能考虑到运行需求. 同时, 好的架构应当反应运行的需求, 架构师应当将用例、特性、必需的行为表现提升为一等实体作为开发团队的地标.</li>
+<li>维护 (maintenance): 维护是软件成本的方面, 主要在于添加新特性或修复问题时定位到修改的最佳位置和策略, 通过组件的划分与隔离, 可以更迅速的定位修改位置, 并极大减少修改可能引入的错误.</li>
+</ul>
+<p>达到这些目的的策略是<em>使尽可能多的选项尽可能长时间的保持开放</em> (to leave as many options open as possible, for as long as possible) , 这些选项是指无关紧要的细节 (details that don&rsquo;t matter).</p>
+<p><strong>规则和细节</strong><br>
+软件系统都可以分解成两部分: 规则 (policy) 和细节 (details) .</p>
+<ul>
+<li><em>规则</em>体现软件的业务规则和流程, 是软件的价值所在.</li>
+<li><em>细节</em>是使人、其他系统以及开发者与规则沟通所必要、但对规则无影响的手段, 包括 I/O 设备、数据库、Web系统、框架、服务器、通信协议等等.</li>
+</ul>
+<p>架构的目的是将规则与细节区分开, 使规则成为系统的必要元素, 使细节则与规则无关, 从而可以<em>延迟或推迟关于细节的决定</em>. 必须决定细节实现的的时间越晚, 我们就能收集到越多的信息去辅助决定, 同时意味着我们可以试验不同的细节实现, 做最优选择.</p>
+<h2 id="独立-independence">独立 (Independence)</h2>
+<h3 id="保持选项开放">保持选项开放</h3>
+<p>良好的架构架构应该支撑:</p>
+<ul>
+<li>用例 (Use Cases): 用例表达了系统的设计意图, 是架构应当首先关注并放在第一优先级的. 由于用例表现的系统行为 (behavior) 属于 policy, 架构对其能施加的影响不大. 但架构应该厘清并暴露行为, 使系统的意图在架构层面可见. 在良好的架构中, 用例在系统结构中是直接可见的, 开发人员不必寻找 (hunt) 行为, 因为行为是作为一级元素处于架构顶层, 直接可见的. 这些元素可能是类、函数、模块等, 它们居于系统的显著位置, 并且命名清晰地描述了它们的功能.</li>
+<li>运行 (Operation): 架构必须支持运行系统所要求的特定的吞吐量、响应速度等指标, 为了满足这些目标, 不同系统可能需要不同的运行方式: 分布式、多进程、单进程&hellip; 好的架构应当 leave this option open, 将系统划分为独立组件, 并且对组件之间的通信方式不做假设, 有利于随着系统的运行需求的变化迁移.</li>
+<li>开发 (Development): 根据康威法则, 任何组织设计的系统, 其结构都倾向于与这个组织沟通结构相同. 因此当一个组织由很多个小团队组成时, 架构一定要方便这些团队独立开发, 方法是将系统分解为精心隔离的、可独立开发的组件</li>
+<li>部署 (Deployment): 架构的目标是&quot;立即部署&rdquo; (immediate deployment) , 即系统开发完成后即可部署, 不需要各种繁杂的配置脚本、文件微调、手动创建等. 达到这一目的的方法仍然是划分组件, 包括某些主组件, 负责将整个系统连接在一起, 并保证各个组件的正确启动、集成和监控.</li>
+</ul>
+<p>要实现以上这些目标的平衡并不容易, 难点在于我们并不知道所有的用例、运行限制、团队结构、部署条件, 即使知道, 它们也一直在变: <em>我们的目标既不明确, 也不恒定</em>. 但还是有些原则相对容易实现, 并有助于保持平衡. 这些原则帮助我们将系统划分为孤立组件, 允许我们尽可能久的保持尽可能多的选项开放.</p>
+<h3 id="层的解耦-decoupling-layer">层的解耦 (decoupling layer)</h3>
+<p>我们无法知道所有的用例, 但至少知道系统的意图 (intent), 依照 SRP 和 CCP, 将因同一原因改变的部分集中起来, 就可将系统解耦为可按需求以不同速率变化的水平层, 比如:</p>
+<ul>
+<li>UI层 (与业务规则无关)</li>
+<li>应用相关的业务规则 (比如检验输入合法性)</li>
+<li>应用无关的业务规则 (比如账户利息计算)</li>
+<li>数据库等细节</li>
+</ul>
+<h3 id="用例的解耦">用例的解耦</h3>
+<p>用例本身变化速率不同, 比如添加记录的用例一般比删除记录的要多变, 因此需要依据用例划分系统.<br>
+每个用例纵向切过系统的各个水平层, 要求我们对系统做两个维度的分割, 同一水平层要根据不同用例区分.<br>
+由于水平分层, 新添加的用例就不必与已有用例相干, 如果将同一用例的各个层级组合起来, 使每个用例只用到各个层的一个切面, 则添加新用例就可以不影响已有用例.</p>
+<h3 id="解耦模式-decoupling-mode">解耦模式 (decoupling mode)</h3>
+<p>为满足用例做的解耦一定程度上也有助于系统运行, 然而, 为了收获这些益处, 解耦必须以某种模式进行. 例如, 为了让不同组件在不同服务器上各自运行, 他们就不能依赖于共处与一个进程地址空间的假设, 必须是独立的服务, 以某种形式通过网络通信, 最终形成面向服务的架构.<br>
+解耦模式是应当保持开放的选项之一.</p>
+<h3 id="独立开发">独立开发</h3>
+<p>由于层和用例的解耦, 不管开发团队是按特性、组件还是层分组, 架构都能很好地支持各组独立开发.</p>
+<h3 id="独立部署">独立部署</h3>
+<p>良好的架构甚至可以允许在系统运行中对层或用例进行热替换.</p>
+<h3 id="关于重复-duplication">关于重复 (duplication)</h3>
+<p>代码的重复大体上是件坏事, 当代码真的出现重复时, 消除它们是职责所在. 但前提是要识别什么是真正的重复: 在<em>任何</em>时候, 修改 A 的同时一定要修改 B, 则 A 和 B 是真正的重复. 反之, 如果 &ldquo;重复&rdquo; 的两段代码会以不同的频率、原因、轨迹修改, 则属于假的重复, 或者叫偶然重复 (accidental duplication), 偶然重复的代码可能会在一段时间后变得完全不同, 一定要克制住消除偶然重复的冲动, 一旦共用就会造成不必要的耦合, 需要拆开时会很痛苦.
+举例</p>
+<ul>
+<li>纵向的: 两个用例的屏幕结构一样, 要不要统一？想一想: 会不会一直一样？</li>
+<li>横向的: 数据库记录的结构和UI层或业务层用的数据结构完全对应, 是共用一个类, 直接传递对象, 还是分别维护每次做层间拷贝？要注意: 这种重复几乎都是偶然的.</li>
+</ul>
+<h3 id="再谈解耦模式">再谈解耦模式</h3>
+<p><strong>三个级别</strong></p>
+<ul>
+<li>源码级解耦: 指控制源代码模块间的依赖, 使得某一模块的修改不要求其他模块的修改或重编译 (如 Ruby Gems). 组件运行于同一地址空间, 通过简单的函数调用通信, 加载到内存的是单一可执行文件, 通常称为单体结构.</li>
+<li>部署 (二进制代码) 级解耦: 指控制部署单元 (如 jar 包、DLL 库、共享库) 之间的依赖, 使得某一模块代码的修改, 不要求其他模块的重新构建或重新部署
+. 有些组件可能仍然在同一地址空间通过函数调用通信, 有些可能运行于同一处理器的不同进程, 通过某种IPC机制通信, 重点是组件划分到了可独立部署的单元中.</li>
+<li>服务 (执行单元) 级解耦: 将依赖数据结构级别, 完全依靠网络数据包通信, 使每个执行单元都独立于其他单元的代码或二进制修改.</li>
+</ul>
+<p><strong>最好的模式</strong><br>
+在项目之初,很难判断哪种模式是最适的, 随着项目的成熟, 最佳模式也在变化. 比如, 如果从一开始就使用服务级解耦, 则可能导致解耦粒度过粗, 也浪费开发成本、系统资源.<br>
+<em>好的架构应当保持解耦模式的开放</em>, 可以随着项目的进展由源码解耦逐渐过渡到部署解耦直至服务解耦, 并能在必要时退回到源码解耦.</p>
+<h2 id="边界boundaries">边界(Boundaries)</h2>
+<h3 id="软件架构是划线的艺术">软件架构是划线的艺术</h3>
+<ul>
+<li>所谓线就是划分系统为部分的边界, 边界两边的部分互不知晓.</li>
+<li>架构以最小化系统开发和维护的人力成本为目的, 而人力成本大量消耗于耦合 (coupling), 尤其是与过早决定的耦合. 过早的决定是指那些与系统的业务需求, 即用例, 无关的决定, 如数据库、Web服务等, 好的系统架构不依赖这些决定, 而将它们作为辅助性的、可延迟的.</li>
+</ul>
+<p><strong>例子</strong></p>
+<ul>
+<li>坏: 因为过早强行使用一系列用于 SoA (Service oriented Architecture) 的工具, 浪费大量人力成本, 系统效率反而受损.</li>
+<li>好: 通过延迟数据库的决定, 使用接口访问数据, 不仅在开发中避开数据库带来的一切问题, 节约人力成本, 并且能方便的试验各种实现, 最终甚至完全放弃了数据库.</li>
+</ul>
+<h3 id="何处画线">何处画线?</h3>
+<ul>
+<li>在有关与无关的部分之间画线. 与业务模型无关部分的例子: 数据库、GUI.</li>
+<li>根据 SRP, 在以不同速率、不同原因变化的部分之间画线.</li>
+</ul>
+<h3 id="连线的方向">连线的方向</h3>
+<p>如果用穿过边界的有向连线表示依赖关系, 则箭头背离的部分是另一部分不关心的, 是无关的, 是可以随时替换的. 根据 DIP 和 SDP, 应该使连线的方向指向业务模型.
+<em>插件架构</em> (Plugin Architecture) : 通过将可选或可更换实现的部分做成插件, 隔离变化, 使核心的业务逻辑免疫于插件的变化.</p>
+<h2 id="边界剖析">边界剖析</h2>
+<p>边界是<em>源码</em>的边界: 在运行时, 穿越边界的行为无非是函数调用, 同时传递一些数据, 边界存在的意义, 应当是隔离源码修改导致的修改、重编译和重部署.</p>
+<h3 id="边界形式一-单体结构中的边界">边界形式一: 单体结构中的边界</h3>
+<p>即经过源码级解耦的组件间的边界, 是最简单的边界形式, 无严格物理表示, 在部署的产品中不可见, 只是对同一处理器的同一地址空间的函数及数据的分割的规范. 大量依赖某种运行时多态形式来管理其内部依赖关系.</p>
+<p><strong>边界穿越的两种情况</strong></p>
+<ul>
+<li>最简单的是低级别客户端调用高级别服务的函数 (注意这里表述的语境: 调用或者说运行时的依赖定义了客户端和服务的角色, 客户端总是依赖服务, 编译时依赖定义了级别, 低级别组件依赖高级别组件), 运行时和编译时的依赖方向相同, 调用传递的数据结构在受调用的服务一边.</li>
+<li>如果高级别客户端需要调用低级别服务的函数, 则运行时依赖和编译时依赖的方向相反, 这时候需要利用多态, 通过插入接口来将编译时依赖倒置, 调用传递的数据结构定义在发起调用的客户端一边.</li>
+</ul>
+<p><strong>特点</strong></p>
+<ul>
+<li>单体结构的项目各组件一般在编译时静态链接, 部署单一文件, 保持高级别组件独立, 有利于独立开发和测试.</li>
+<li>单体结构中的边界穿越 (函数调用) 代价很低, 因此可能非常频繁.</li>
+<li>由于单体的部署一般需要编译和静态链接, 这种系统中的组件一般以源码形式分发.</li>
+</ul>
+<h3 id="边界形式二-部署级组件">边界形式二: 部署级组件</h3>
+<p>架构边界最简单的物理表现是动态链接库, 比如 .Net DLL、jar、so 文件.</p>
+<p><strong>特点</strong></p>
+<ul>
+<li>部署不涉及编译, 组件以二进制形式或等价形式分发, 部署的过程就是将这些部署单元收集为某种便利的形式, 如 WAR 文件甚至简单的目录.</li>
+<li>除此之外, 与单体结构没有不同: 组件运行在同一地址空间, 通过依赖倒置维护单向依赖关系.</li>
+<li>动态链接或运行时加载可能消耗额外时间, 但通信仍然代价很低, 可能很频繁.</li>
+</ul>
+<h3 id="边界形式三-本地进程">边界形式三: 本地进程</h3>
+<p>组件运行在同一处理器的不同地址空间.</p>
+<p><strong>超级组件</strong><br>
+每个进程可能是静态编译的单体结构, 或由动态链接的部署级组件组成, 多个进程之间可能以静态或动态的形式共享组件, 每个进程可以看作是一个超级组件, 由低等级的组件组成, 这些低等级组件多态管理相互的依赖关系.</p>
+<p><strong>特点</strong></p>
+<ul>
+<li>依赖规则不变: 源码级的依赖都以相同方向穿过边界, 并且总是指向高级别组件. 低级别进程作为高级别进程的插件, 高级别进程不知道有关它们的细节 (如名字、物理地址等).</li>
+<li>组件间通过Socket、Message queue等IPC方式通信, 涉及系统调用、数据封解包、上下文切换等比较昂贵的操作, 应限制通信频率.</li>
+</ul>
+<h3 id="边界形式四-服务">边界形式四: 服务</h3>
+<p>服务不依赖于物理位置, 不同的服务可能也可能不运行在同一处理器上.</p>
+<p><strong>特点</strong></p>
+<ul>
+<li>服务假设所有通信通过网络进行, 应尽量降低通信频率并考虑较高的延迟.</li>
+<li>原则不变: 高级别服务不应知道低级别服务的物理细节 (如 URI).</li>
+</ul>
+<p><em>除了最简单的单体结构, 多数系统中都包含了多种边界形式.</em></p>
+<h2 id="策略和等级-policy-and-level">策略和等级 (Policy and Level)</h2>
+<dl>
+<dt>策略</dt>
+<dd>软件是各种策略的表述. 架构要做的是将系统中的各种策略按照变化的时机、原因划分为不同的<em>等级</em>, 形成组件, 组件的依赖关系应形成 DAG, 依赖关系总是从低等级组件指向高等级组件.</dd>
+<dt>等级</dt>
+<dd>等级的严格定义是与输入输出的距离, 策略与输入输出距离越远, 则等级越高.</dd>
+</dl>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/%E6%9E%B6%E6%9E%84/>架构</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/clean-architecture/20-29-architecture-2/"><span class="li">&larr;</span>[Clean Architecture] 20~29. 架构 (二)</a></p><p><a class="link" href="/notes/clean-architecture/12-14-component-principles/"><span class="li">&rarr;</span>[Clean Architecture] 12~14.组件原则</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

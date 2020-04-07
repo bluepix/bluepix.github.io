@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[Clean Architecture] 12~14.组件原则&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#组件">组件</a>
+      <ul>
+        <li><a href="#组件简史">组件简史</a></li>
+      </ul>
+    </li>
+    <li><a href="#组件组合-cohesion">组件组合 (cohesion)</a>
+      <ul>
+        <li><a href="#划分组件的三个原则">划分组件的三个原则</a></li>
+        <li><a href="#三个原则的平衡">三个原则的平衡</a></li>
+      </ul>
+    </li>
+    <li><a href="#组件的耦合-coupling">组件的耦合 (Coupling)</a>
+      <ul>
+        <li><a href="#原则一-无循环依赖原则-adp-the-acyclic-dependencies-principle">原则一: 无循环依赖原则 (ADP, The Acyclic Dependencies Principle)</a></li>
+        <li><a href="#自顶向下设计">自顶向下设计?</a></li>
+        <li><a href="#原则二-稳定依赖原则-sdp-the-stable-dependencies-principle">原则二: 稳定依赖原则 (SDP, The Stable Dependencies Principle)</a></li>
+        <li><a href="#原则三-稳定抽象原则-sap-the-stable-abstractions-principle">原则三: 稳定抽象原则 (SAP, The Stable Abstractions Principle)</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[Clean Architecture] 12~14.组件原则</h1><p class="article date">2020-04-07</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#组件">组件</a>
+      <ul>
+        <li><a href="#组件简史">组件简史</a></li>
+      </ul>
+    </li>
+    <li><a href="#组件组合-cohesion">组件组合 (cohesion)</a>
+      <ul>
+        <li><a href="#划分组件的三个原则">划分组件的三个原则</a></li>
+        <li><a href="#三个原则的平衡">三个原则的平衡</a></li>
+      </ul>
+    </li>
+    <li><a href="#组件的耦合-coupling">组件的耦合 (Coupling)</a>
+      <ul>
+        <li><a href="#原则一-无循环依赖原则-adp-the-acyclic-dependencies-principle">原则一: 无循环依赖原则 (ADP, The Acyclic Dependencies Principle)</a></li>
+        <li><a href="#自顶向下设计">自顶向下设计?</a></li>
+        <li><a href="#原则二-稳定依赖原则-sdp-the-stable-dependencies-principle">原则二: 稳定依赖原则 (SDP, The Stable Dependencies Principle)</a></li>
+        <li><a href="#原则三-稳定抽象原则-sap-the-stable-abstractions-principle">原则三: 稳定抽象原则 (SAP, The Stable Abstractions Principle)</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="reset-header" style="--start:11"></div><h2 id="组件">组件</h2>
+<p>组件是可作为系统的一部分独立部署的最小实体, 是可独立部署和独立开发的单元.</p>
+<h3 id="组件简史">组件简史</h3>
+<ol>
+<li>起初, 程序是不可重定位的 (not relocatable) ,必须在程序中声明加载到内存中的位置 , 并且库是通过源码提供的, 编译时间受库的大小影响.</li>
+<li>为了缩短编译时间, 将库的源代码分离出来编译为二进制文件, 在运行时加载到固定位置. 由于这个固定位置是运行时程序本身代码占用空间的上限, 当预留给程序代码的空间不够时, 就只能将程序代码分成几块加载.</li>
+<li>可重定位 (relocatability) 和运行时链接: 为了解决以上问题, 人们修改编译器使其生成可重定位的二进制函数库, 加载器 (loader) 在加载时根据其中的标志位引导结合实际加载位置修改部分数据 (一般是将内存引用地址加上一个偏移, 偏移量为加载起始地址), 同时, 编译器会将函数名包含在二进制文件的元数据中. 加载器一旦确定函数库的加载位置, 就可以链接 (link) 程序调用库函数生成的外部引用 (external references) 和库函数生成的外部定义 (external definition). 这就是链接加载器 (linking loader).</li>
+<li>链接器 (linker) : 随着程序需要的函数库增多增大, 由于早期存储设备读取速度的限制, 链接加载变得非常缓慢, 最终, 人们将链接过程从加载过程中分离出来, 由链接器来完成, 链接器生成一个链接好的、可重定位的文件, 使加载器可以快速加载.</li>
+<li>高级语言的使用带来代码量的爆炸, 导致静态链接花费时间的上升. 但随着存储设备访问速度、处理器能力等的飞速发展, 链接时间越来越短, 甚至动态链接又变得现实, 由此出现了共享库、jar包等动态库分发形式.这些运行时组合到一起的动态库, 就是我们的架构中的组件.</li>
+</ol>
+<h2 id="组件组合-cohesion">组件组合 (cohesion)</h2>
+<h3 id="划分组件的三个原则">划分组件的三个原则</h3>
+<dl>
+<dt><strong>复用/发布等价原则 (REP, The Reuse/Release Equivalence Principle)</strong></dt>
+<dd>复用粒度即发布粒度, 组件必须通过跟踪系统发布并带有版本号, 才能有效复用.</dd>
+</dl>
+<ul>
+<li>复用代码可以定义为: 使用者不拥有代码, 即不需要阅读接口定义以外的代码, 不承担维护责任, 只需要在有新版本组件发布时, 根据自己的需要决定何时更新即可.</li>
+<li>REP 表示, <em>组件用户必须同时复用一次发布中包含的所有代码, 不多也不少</em>. 这个看起来明显的事实决定了: 组件内的类和模块必须是有内聚性的一个群体, 他们必须是可同时发布的 (releasable), 使用同一个版本号, 在同一个发布文档中描述变化.</li>
+<li>REP是一个很弱的建议, 但是一旦违反很容易暴露.</li>
+<li>理解: 这个具有内聚性的类和模块的集合, 就是一个可复用组件, REP 认为, 这样一个组件应该一同发布并记录版本, 不多也不少. 如果复用范围小于发布范围, 则用户在更新这个组件的同时必须更新其他组件, 如果复用范围大于发布范围, 则用户更新时会同时更新无关的类或组件, 这两者都可能导致潜在的兼容问题. 而版本号则是判断组件兼容性所必需的.</li>
+</ul>
+<dl>
+<dt><strong>共同封闭原则 (CCP, The Common Closure principle)</strong></dt>
+<dd>应该将因为相同原因、同时修改的类归入同一组件, 将因不同原因、非同时修改的类划分到不同组件.</dd>
+</dl>
+<ul>
+<li>CCP 是 SRP 在组件层面的对应, 它们都强调将同时、同原因修改的东西放在一起, 反之则分开.</li>
+<li>CCP 的目的是当需求发生改变时, 可以将对软件的修改限制在一个组件中, 将软件的发布、重新验证和重新部署的工作量降到最低</li>
+<li>CCP 与 OCP 原则紧密相关, Closure 指的就是 Closed for modification 中的 closed, 封闭于修改是理想的, 但完全不修改是不现实的, CCP 使我们将修改限制在我们期望或已经经历过的最常见类型.</li>
+</ul>
+<dl>
+<dt><strong>共同复用原则 (CRP, The Common Reuse Principle)</strong></dt>
+<dd>不要强迫组件的用户去依赖他们不需要的东西.</dd>
+</dl>
+<ul>
+<li>同时复用的类和模块应当置于同一组件中, 而不同时复用的, 或者说不紧密关联在一起的类或模块, 不应放在同一组件中, 否则就可能造成不必要的重新编译和部署.</li>
+<li>CRP 是 ISP 在组件层面的对应, 它们都强调, 不应依赖不需要的东西.</li>
+</ul>
+<h3 id="三个原则的平衡">三个原则的平衡</h3>
+<ul>
+<li>三个原则存在互斥关系, REP 和 CCP 主张组件包括更多的类, 而 CRP 则主张剔除类, 架构师需要在三者中寻求平衡.</li>
+<li>三者之间的关系可以用下图表示. 每个原则对面的边表示了违反这个原则的后果.
+<span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  ><img class="img" src="cohesion-tension.png?width=500"
+        alt width="500"
+        /></a></span></span></li>
+<li>架构师应当在这个三角形中寻求一个点, 来满足开发团队当前的开发需求, 并且应当始终注意到, 这个点 (反应开发团队的关注重点) 可能随着开发的进行不断移动. 一般来说, 开发前期的关注点偏右, 重点是CCP所关注的易维护性, 一定程度上牺牲可复用性；随着项目成熟, 其他项目开始从当前项目衍生, 关注点逐渐左移.</li>
+</ul>
+<h2 id="组件的耦合-coupling">组件的耦合 (Coupling)</h2>
+<h3 id="原则一-无循环依赖原则-adp-the-acyclic-dependencies-principle">原则一: 无循环依赖原则 (ADP, The Acyclic Dependencies Principle)</h3>
+<p>组件依赖图 (component dependency graph) 上不应存在循环.</p>
+<ul>
+<li><strong>问题:</strong> mas, morning after syndromes, 由于多个开发人员同时修改一份代码, 造成已经可以工作的代码隔天早上无法就又工作了. 但开发团队和项目规模比较大时, mas会相当严重, 经常导致连续数周无法构建一个稳定版本.</li>
+<li><strong>无效答案:</strong> 每周构建 (Weekly Build), 即每周的前四天大家各干各的, 在周五集中合并代码. 随着项目代码增加, 很快, 周五一天已经不可能合并所有代码, 合并代码的时间逐渐溢出到周六、周四&hellip; 构建安排经常变动, 集成和测试的效率越来越低.</li>
+<li><strong>有效答案:</strong> 将项目代码划分为可复用组件, 由一个人 (或一个组) 负责一个组件, 组件可以工作后, 负责人为组件确定版本号并发布, 负责人可以继续在自己的代码上修改组件, 而其他人可以选择在方便的时候开始使用新发布的版本. 这样做的好处是
+<ul>
+<li>各个组件的开发人员之间互不依赖, 某一组件的修改不直接影响其他组的工作, 其他组可以根据进度选择合适的时间将某个组件迁移到新版本.</li>
+<li>集成是小步进行的, 不存在一个单一的、所有人必须凑到一起合并代码的时间点.</li>
+</ul>
+</li>
+<li><strong>有效的前提:</strong> 组件之间不能存在循环依赖, 各个组件之间的依赖关系构成一张有向无环图 (Directed Acyclic Graph, DAG), 即从任何一个组件开始, 沿着依赖的任一路径, 都不可能回到这个组件, 这样的好处是
+<ul>
+<li>易于管理: 当某一组件发生修改时, 通过分析 DAG, 很容易确定哪些组件会受影响: 发生修改的组件上游的所有组件应当择机迁移到此组件的新版本, 而下游或平级的组件则完全不受影响.</li>
+<li>易于测试: 当需要测试某一组件时, 只需要集成其下游的组件.</li>
+<li>易于构建: 当需要发布整个系统时, 只需从下游开始向上游构建即可, 构建过程清晰且易于执行.</li>
+</ul>
+</li>
+<li>循环依赖的后果
+<ul>
+<li>难以开发: 环状路径上的组件被捆绑为一个整体, 必须同时开发和测试, 最终造成 mas.</li>
+<li>难以测试.</li>
+<li>难以构建, 很难甚至无法找到构建的起始节点.</li>
+</ul>
+</li>
+<li>打破循环的两个方法
+<ul>
+<li>通过插入接口实现依赖倒置.</li>
+<li>将环状路径上的两个组件共同依赖的类移动到新组件, 并使两者同时依赖新组件 (这个解决途径说明, 为了应对需求变化, 组件结构是易变的, 随着开发进行, 组件的依赖关系在抖动中增长).</li>
+</ul>
+</li>
+</ul>
+<h3 id="自顶向下设计">自顶向下设计?</h3>
+<p>自顶向下设计组件结构是不现实的. 因为组件的划分不基于软件的功能, 而是基于可构建 (buldability) 和可维护 (maintainability).</p>
+<ul>
+<li>这也是为什么开发开始时没有设计组件依赖图的需求, 因为并没有东西需要构建和维护.</li>
+<li>随着开发中积累了越来越多的模块, 开始有必要考虑依赖管理来避免 mas, 并且, 我们希望修改尽量在局部进行, 因而更多的考虑 SRP 和 CCP, 将共同修改的类放在一起.</li>
+<li>依赖结构设计的重点是隔离易变性 (isolation of volatility), 保护不经常变化的组件不受易变组件的影响.</li>
+<li>随着开发继续, 重点逐渐转移到创建可复用的模块, CRP 开始成为主要的参考原则.</li>
+<li>最终, 依赖循环开始出现, 需要应用 ADP, 组件结构抖动增长.</li>
+</ul>
+<h3 id="原则二-稳定依赖原则-sdp-the-stable-dependencies-principle">原则二: 稳定依赖原则 (SDP, The Stable Dependencies Principle)</h3>
+<p>依赖应指向更稳定的方向, 即, 不经常改变的组件不应依赖易于改变的组件.</p>
+<ul>
+<li>什么是稳定: 稳定程度并不取决于改变的频率, 而取决于改变的难度, 越难以改变的组件越稳定.</li>
+<li>难以改变的原因很多, 我们关注的是组件与其他组件的依赖关系, 组件受依赖越多, 依赖越少, 越稳定, 如果一个组件完全不依赖其他组件, 则是独立 (independent) 的, 是最稳定的.</li>
+<li>稳定性的衡量: I = Fan-out/(Fan-in + Fan-out), 其中 I 表示 Instability, 不稳定性, Fan-out 表示出依赖, 即此组件内部的类所依赖的此组件之外的类的数量, Fan-in 表示入依赖, 即在此组件之外但依赖此组件内的类的类的数量 (注意两者都是此组件外部的类的数量, 原文对 Fan-out 表述有误, 依据后文修正). 依赖的计数, 在 C++ 中一般可以通过计数 #include 数, 在 Java 中可通过计数 import 语句和带修饰类名数. 两个极端情况
+<ul>
+<li>组件没有出依赖, 但入依赖大于 0, 则 I = 0, 说明此组件对其他组件负责 (responsible, 此组件修改会引起其他组件修改) 并且独立 (independent) , 是最稳定的一类.</li>
+<li>组件没有入依赖, 出依赖大于 0, 则 I = 1, 组件的修改不会影响任何其他组件, 是最不稳定的一类.</li>
+</ul>
+</li>
+<li>软件中并非所有组件都是稳定的, 否则软件将无法修改, 但根据 SDP, <em>我们应保证沿着DAG的连线方向, I 值逐渐减小</em>.</li>
+<li>如果沿着依赖方向出现 I 值增大, 就需要运用 DIP, 插入接口来反转依赖方向. 这可能导致只包含接口定义的抽象组件出现, 这在静态类型语言中很常见, 在动态类型语言中, 则无此必要, 依赖结构要简单得多.</li>
+</ul>
+<h3 id="原则三-稳定抽象原则-sap-the-stable-abstractions-principle">原则三: 稳定抽象原则 (SAP, The Stable Abstractions Principle)</h3>
+<p>组件有多稳定, 就应该多抽象.</p>
+<ul>
+<li>上层策略 (high-level policy): 上层架构与策略决定不轻易变化, 封装这些策略的软件应当置于 I = 0 的稳定组件中. 同时, 为了避免这部分代码不易改变带来整个系统的不灵活, 根据 OCP, 这部分代码应易于在不修改的前提下扩展. 同时满足稳定与易于扩展条件的就是<em>抽象类</em>.</li>
+<li>SAP 认为, 稳定组件应当抽象, 包含接口和抽象类, 以避免其稳定性影响扩展的灵活性, 而不稳定组件应当包含实体类, 因其易于修改.</li>
+<li>SAP 和 SDP 的组合实际是 DIP 在组件层面的对应: 依赖应该指向更抽象的方向. 区别在于 DIP 是类层面的原则, 而类不是抽象就是具体, 但是组件则有可能是具体类和抽象类的组合.</li>
+<li>抽象性的度量: A = Na/Nc, 其中 A 表示组件的抽象程度, Na 表示组件中抽象类或接口类的数量, Nc 表示组件中类的总数量, A = 0 表示组件不含抽象类, A = 1 表示组件只包含抽象类和接口.</li>
+<li>抽象与稳定的关联度量
+<span class="image-container"><span class="link"><a target="_blank" rel="noopener noreferrer" 
+  ><img class="img" src="abstract-stable.jpg?width=300"
+        alt width="300"
+        /></a></span></span>
+<ul>
+<li>理想位置
+<ul>
+<li>(0,1): 组件完全稳定而抽象</li>
+<li>(1,0): 组件完全不抽象, 不稳定</li>
+</ul>
+</li>
+<li>痛苦区: (0,0)及其附近. 组件稳定, 难以修改, 不抽象, 难以扩展. 这个区域的两个例子是
+<ul>
+<li>数据库schema: 非常易变、极其具体、被严重依赖, 因此一般而言管理 OO 程序与数据库之间的接口都比较困难</li>
+<li>一些实体工具类库, 如 String 组件: 大量组件依赖 String, 但其中的类都是实体类. 但这是无害的, 因为这些类是不易变的 (nonvolatile) , 实际上, 痛苦区可以加上一个z轴, 表示易变性, 痛苦的程度同时取决于易变的程度.</li>
+</ul>
+</li>
+<li>无用区: (1,1)及其附近. 组件不稳定但抽象, 属于无实现的抽象类, 应当剔除.</li>
+<li>主序列 (Main Sequence) : 两个理想位置的连线. 好的架构应当尽量使组件集中在理想位置, 但实际上, 大系统中的一些小组件经常不是完全抽象或完全稳定的, 它们最好的位置是主序列及其附近. 到主序列的距离可以这样量度: D = |A + I - 1|, D 的范围在 [0,1] 之间, D = 0 表示组件恰好在主序列上, 而 D = 1 表示组件距离主序列最远, D 越大, 越说明应当重新审视其设计, 通过重构使其靠近主序列.
+<ul>
+<li>对于一个软件, 可以统计其各个组件的 D 值的平均和偏差, 对于偏差超过一定范围 (如一个标准差) 的组件重点检查重构.</li>
+<li>对于一个组件可以按版本记录其 D 值变化, 警惕 D 值上升的趋势.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/%E6%9E%B6%E6%9E%84/>架构</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/clean-architecture/15-19-architecture-1/"><span class="li">&larr;</span>[Clean Architecture] 15~19. 架构 (一)</a></p><p><a class="link" href="/notes/clean-architecture/07-11-solid/"><span class="li">&rarr;</span>[Clean Architecture] 07~11. SOLID 设计原则</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

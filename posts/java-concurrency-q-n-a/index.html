@@ -12,7 +12,8 @@
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
-    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><div class="reset-header" style="--start:0"></div><p><strong>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答.</strong></p>
+    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><div class="reset-header" style="--start:0"></div><p><strong>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答.</strong><br>
+持续补充中&hellip;</p>
 <hr>
 <p><strong>Q:</strong> 并发编程要什么?<br>
 <strong>A:</strong> 并发编程希望得到</p>
@@ -151,7 +152,6 @@
 <hr>
 <p><strong>Q:</strong> 还有活锁?<br>
 <strong>A:</strong> 是的, 活锁 (livelock) 是指线程没有阻塞, 但是却因为一直重试某个操作无法继续向前执行. 比如, 错误恢复机制误将不可恢复的错误当作可恢复的, 把任务放回队首, 结果一直反复处理出错. 另一种活锁的可能是, 多个协作的线程, 响应其它线程的操作改变他自己的状态, 但这同时导致了依赖状态的变化, 就像两个人对面相遇, 相互左右避让却始终不能通过.</p>
-<p>持续补充中&hellip;</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a></section><div id="bottom-sticky">
     <a id="gototop"></a>
 </div></div><section class="article navigation"><p><a class="link" href="/posts/on-jmm/"><span class="li">&rarr;</span>Java 内存模型入门</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
