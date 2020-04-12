@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Tue, 07 Apr 2020 14:06:15 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 12 Apr 2020 13:25:14 +0800</lastBuildDate>
     
         <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>文章</title>
+      <link>/posts/</link>
+      <pubDate>Sun, 12 Apr 2020 13:25:14 +0800</pubDate>
+      
+      <guid>/posts/</guid>
+      <description></description>
+      
+    </item>
     
     <item>
       <title>笔记</title>
@@ -18,16 +28,6 @@
       <pubDate>Tue, 07 Apr 2020 14:06:15 +0800</pubDate>
       
       <guid>/notes/</guid>
-      <description></description>
-      
-    </item>
-    
-    <item>
-      <title>文章</title>
-      <link>/posts/</link>
-      <pubDate>Sat, 04 Apr 2020 10:20:29 +0800</pubDate>
-      
-      <guid>/posts/</guid>
       <description></description>
       
     </item>

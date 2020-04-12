@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Sat, 04 Apr 2020 10:20:29 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 12 Apr 2020 13:25:14 +0800</lastBuildDate>
     
         <atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
     
@@ -39,6 +39,16 @@
       
       <guid>/posts/make-mp-computer-correctly/</guid>
       <description>注： 本文译自 Leslie Lamport 发表于 1979 年 9 月的 IEEE Transactions on Computers 上的文章 How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs, 其重要意义在于正式定义了顺序一致性. Lamport 于 2013 年获图灵奖, 其获奖成就之一就</description>
+      
+    </item>
+    
+    <item>
+      <title>Android 程序中包名和 Application ID</title>
+      <link>/posts/android-package-name-app-id/</link>
+      <pubDate>Sun, 12 Apr 2020 13:25:14 +0800</pubDate>
+      
+      <guid>/posts/android-package-name-app-id/</guid>
+      <description>Application ID 作用 Application ID 是应用程序在 Google Play 商店和设备上的唯一标识. 所以应用一旦发布, application ID 是不可以改变的. 形式 Application ID 的形式类似于 Java 的包名, 但是有几点额外限制:</description>
       
     </item>
     

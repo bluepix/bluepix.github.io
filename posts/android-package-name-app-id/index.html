@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>Android 程序中包名和 Application ID&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">Android 程序中包名和 Application ID</h1><p class="article date">2020-04-12</p></section><article class="article markdown-body"><div class="reset-header" style="--start:0"></div><h2 id="application-id">Application ID</h2>
+<h3 id="作用">作用</h3>
+<p>Application ID 是应用程序在 Google Play 商店和设备上的唯一标识. 所以应用一旦发布, application ID 是不可以改变的.</p>
+<h3 id="形式">形式</h3>
+<p>Application ID 的形式类似于 Java 的包名, 但是有几点额外限制:</p>
+<ul>
+<li>最少包含两段 (segments)</li>
+<li>每段必须以字母开头</li>
+<li>每段只能包含字母、数字和下划线</li>
+</ul>
+<h3 id="定义方式">定义方式</h3>
+<h4 id="默认定义">默认定义</h4>
+<p>在 build.gradle 中定义:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gradle" data-lang="gradle">android <span style="color:#f92672">{</span>
+    defaultConfig <span style="color:#f92672">{</span>
+        applicationId <span style="color:#e6db74">&#34;com.example.myapp&#34;</span>
+        <span style="color:#f92672">...</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#f92672">...</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><h4 id="为不同的变体定义">为不同的变体定义</h4>
+<p>在 build.gradle 中定义, 覆盖默认值, 或定义后缀:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gradle" data-lang="gradle">android <span style="color:#f92672">{</span>
+    defaultConfig <span style="color:#f92672">{</span>
+        applicationId <span style="color:#e6db74">&#34;com.example.myapp&#34;</span>
+    <span style="color:#f92672">}</span>
+    productFlavors <span style="color:#f92672">{</span>
+        free <span style="color:#f92672">{</span>
+            applicationIdSuffix <span style="color:#e6db74">&#34;.free&#34;</span>
+        <span style="color:#f92672">}</span>
+        pro <span style="color:#f92672">{</span>
+            applicationIdSuffix <span style="color:#e6db74">&#34;.pro&#34;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+    buildTypes <span style="color:#f92672">{</span>
+        debug <span style="color:#f92672">{</span>
+            applicationIdSuffix <span style="color:#e6db74">&#34;.debug&#34;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>注意, 如果要在 Google Play 商店为不同设备类型分发各自版本的应用, 应当使用同一个 application ID, 定义不同的 versionCode.</p>
+<h4 id="测试">测试</h4>
+<p>Instrumentation 测试的 APK, 其 application ID 默认为原始 ID 加上后缀 &ldquo;.test&rdquo;, 也可以自行配置.</p>
+<h2 id="包名">包名</h2>
+<p>这里包名是指 AndroidManifest.xml 中的 package 属性值.</p>
+<h3 id="作用-1">作用</h3>
+<ul>
+<li>构建工具以之作为 R.java 类的命名空间, 即若 package 值为 com.example.myapp, 则 R 的完整类名为 com.example.myapp.R</li>
+<li>用于解析 AndroidManifest.xml 中的相对类名</li>
+</ul>
+<p>因此, 代码的基准包名 (base package name) 一般和 package 属性一致, 否则就需要在代码中 import R 类, 在 AndroidManifest.xml 中用完整类名引用组件.</p>
+<h3 id="定义方式-1">定义方式</h3>
+<p>如上所述, 在 AndroidManifest.xml 中用 package 属性定义:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;utf-8&#34;?&gt;</span>
+<span style="color:#f92672">&lt;manifest</span> <span style="color:#a6e22e">xmlns:android=</span><span style="color:#e6db74">&#34;http://schemas.android.com/apk/res/android&#34;</span>
+    <span style="color:#a6e22e">package=</span><span style="color:#e6db74">&#34;com.example.myapp&#34;</span>
+    <span style="color:#a6e22e">android:versionCode=</span><span style="color:#e6db74">&#34;1&#34;</span>
+    <span style="color:#a6e22e">android:versionName=</span><span style="color:#e6db74">&#34;1.0&#34;</span> <span style="color:#f92672">&gt;</span>
+</code></pre></div><p>注意如果包含多个 AndroidManifest.xml 文件用于不同的构建变体, 最终合成的版本中使用的是优先级最高的清单文件中的值.</p>
+<h2 id="关系">关系</h2>
+<p>Application ID 和包名可以相互独立的修改, 互无影响. 但是两者又有以下联系.</p>
+<ul>
+<li>[默认] 用 Android Studio 创建项目时, 其 application ID 值与创建时选择的包名一致;</li>
+<li>[兼容] 出于兼容性考虑, 如果 build.gradle 中没有定义 application ID, 构建工具使用包名作为 application ID, 这种情况下修改 package 的值会影响 application ID;</li>
+<li>[遗留] 由于历史原因 (application ID 曾与包名直接绑定)，<em>某些 API 的方法名或参数名中包含的 packageName 是 application ID</em>，如 <code>Context.getPackageName()</code> 方法返回的实际是 application ID，程序的真实包名没有必要暴露给应用代码外部.</li>
+<li>[复用] package 的原始值仅在构建过程中使用，构建工具会将 application ID 复制到最终的清单文件中替换 package 的原始值，原始值被丢弃，Google Play 商店和 Android 平台正是通过 package 的值来唯一识别应用程序，所以 package 属性是复用的, 构建时表示包名，构建完成后表示 application ID.</li>
+<li>[Bug] 使用 WebView 加载 file:///android_res/ 开头的资源, 需要将包名作为 application ID 的前缀.</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/android/>Android</a><a class="tag" href=/tags/%E7%BB%86%E8%8A%82/>细节</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/posts/make-mp-computer-correctly/"><span class="li">&larr;</span>[译] 如何制造正确执行多进程程序的多处理器计算机</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>
