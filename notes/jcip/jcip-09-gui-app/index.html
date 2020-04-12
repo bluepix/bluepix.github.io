@@ -52,10 +52,10 @@
 另一个原因与 MVC 有关, Controller 可以修改 Model, 通知 View 更新, 也可以直接调用 View, 后者由向 Model 查询状态, 同样可能导致相反的访问顺序引起死锁.</p>
 <p>单线程 GUI 通过线程封闭来达到线程安全.</p>
 <h3 id="单线程事件处理">单线程事件处理</h3>
-<p>GUI 一般在单线程中处理细粒度的事件. 一个问题在与长时间的任务可能阻塞任务处理线程, 所以这些任务应推到其它线程执行.
+<p>GUI 一般在单线程中处理细粒度的事件. 一个问题在于长时间的任务可能阻塞任务处理线程, 所以这些任务应推到其它线程执行.<br>
 短期任务一般可以直接在任务处理线程执行, 长期任务则应在其它线程执行, 如有必要执行向事件线程通知执行进度和完成.</p>
 <h2 id="共享数据模型">共享数据模型</h2>
-<p>GUI 程序的状态可以维护在线程安全的更像数据模型 (model) 中. View 组件可以维护自有的 model, 用线程封闭保护. 这种模式称为分割数据模型 (split-model).</p>
+<p>GUI 程序的状态可以维护在线程安全的共享数据模型 (model) 中. View 组件可以维护自有的 model, 用线程封闭保护. 这种模式称为分割数据模型 (split-model).</p>
 <h2 id="其它单线程子系统">其它单线程子系统</h2>
 <p>除了 GUI 系统, 很多其它子系统可以利用线程封闭来达到线程安全的目的, 利用已有的组件如 Future + <code>Executors.newSingleThreadPool</code> 可以方便的实现这种要求.</p>
 </article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/java/>Java</a><a class="tag" href=/tags/%E5%B9%B6%E5%8F%91/>并发</a><a class="tag" href=/tags/jcip/>JCIP</a></section><div id="bottom-sticky">
