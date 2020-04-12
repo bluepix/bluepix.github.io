@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.67.0" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>[Clean Architecture] 30~34. 细节及其它&nbsp;&ndash;&nbsp;诗川的笔记</title><link rel="stylesheet" href="/css/core.min.baef11964111f999b2634c3fdc0627de140845616da0fc8b6d3fa63a50a9714a2f40fdaca8325dda034e0d67c0b0e1de.css" integrity="sha384-uu8RlkER&#43;ZmyY0w/3AYn3hQIRWFtoPyLbT&#43;mOlCpcUovQP2sqDJd2gNODWfAsOHe"><script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"><\/script>');
+</script>
+<link rel="shortcut icon" href="/img/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96x96.png"><body>
+    <div class="base-body"><section id="header" class="site header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content">
+<section class="side-toc">
+    <div class="toc-container">
+        <h4 class="nocount">目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据库是细节">数据库是细节</a></li>
+    <li><a href="#web-是细节">Web 是细节</a></li>
+    <li><a href="#frameworks-是细节">Frameworks 是细节</a></li>
+    <li><a href="#案例分析-略">案例分析 (略)</a></li>
+    <li><a href="#其它">其它</a>
+      <ul>
+        <li><a href="#按层分包-package-by-layer">按层分包 Package by layer</a></li>
+        <li><a href="#按特性分包-package-by-feature">按特性分包 Package by feature</a></li>
+        <li><a href="#端口和适配器-ports-and-adapters">端口和适配器 (Ports and adapters)</a></li>
+        <li><a href="#按组件分包-package-by-component">按组件分包 Package by component</a></li>
+        <li><a href="#重要的细节-访问权限">重要的细节: 访问权限</a></li>
+        <li><a href="#其他解耦模式举例">其他解耦模式举例</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="article-container"><section class="article header">
+    <h1 class="article title">[Clean Architecture] 30~34. 细节及其它</h1><p class="article date">2020-04-07</p></section><article class="article markdown-body">
+<section class="markdown-body embed-toc">
+    <div class="toc-container">
+        <h4>目录</h4>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据库是细节">数据库是细节</a></li>
+    <li><a href="#web-是细节">Web 是细节</a></li>
+    <li><a href="#frameworks-是细节">Frameworks 是细节</a></li>
+    <li><a href="#案例分析-略">案例分析 (略)</a></li>
+    <li><a href="#其它">其它</a>
+      <ul>
+        <li><a href="#按层分包-package-by-layer">按层分包 Package by layer</a></li>
+        <li><a href="#按特性分包-package-by-feature">按特性分包 Package by feature</a></li>
+        <li><a href="#端口和适配器-ports-and-adapters">端口和适配器 (Ports and adapters)</a></li>
+        <li><a href="#按组件分包-package-by-component">按组件分包 Package by component</a></li>
+        <li><a href="#重要的细节-访问权限">重要的细节: 访问权限</a></li>
+        <li><a href="#其他解耦模式举例">其他解耦模式举例</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</section>
+<div class="reset-header" style="--start:29"></div><h2 id="数据库是细节">数据库是细节</h2>
+<p>数据结构 (structure) 或说数据模型 (model) 对于系统架构是至关重要的.<br>
+关系型数据库的流行很大程度上得益于磁盘的存在, 随着技术演进, 内存可能最终代替磁盘, 如同磁盘代替磁带. 作为将数据结构在内存与永久性存储之间移动的手段, 数据库是细节.</p>
+<h2 id="web-是细节">Web 是细节</h2>
+<p>Web是GUI, 是细节.</p>
+<h2 id="frameworks-是细节">Frameworks 是细节</h2>
+<p>Frameworks 不是架构, 尽管有些试图成为架构. Frameworks 的作者尽管有着高尚的出发点, 但无法做到产品是最有利于你的, 因为<em>他们不了解你的问题</em>, 尽管你的问题和他们的问题有很多重叠, 这也是 Frameworks 流行的原因.</p>
+<p><strong>不对称的结合</strong><br>
+使用 Framework 不会给其作者带来任何风险, 用户承担了一切风险和压力, 如:</p>
+<ul>
+<li>Framework 通常违背依赖规则, 使用 Framework 常常意味着关键业务规则或用例依赖于第三方代码.</li>
+<li>在项目早期 Framework 可能带来方便, 但随着产品成熟, Framework 可能愈渐成为限制.</li>
+<li>可能会出现新的更好的 Framework.</li>
+<li></li>
+</ul>
+<p><strong>保持距离</strong><br>
+使用 Framework, 不要 &ldquo;嫁给&rdquo; Framework, 保持距离, 比如</p>
+<ul>
+<li>Framework 鼓励从其中的类派生你的业务类 —— 不要这样做, 考虑派生代理类, 并将其保留在可插拔的组件中.</li>
+<li>不要在核心代码中使用 Framework, 只在可插拔的组件中使用, 遵守依赖规则.</li>
+</ul>
+<h2 id="案例分析-略">案例分析 (略)</h2>
+<h2 id="其它">其它</h2>
+<h3 id="按层分包-package-by-layer">按层分包 Package by layer</h3>
+<p>横向分层架构, 将代码按其作用划分到不同的层, 如Web代码、业务逻辑、数据持久化各处于一层, 每层只依赖与其临近的下一层.
+优点</p>
+<ul>
+<li>快速起步.
+缺点</li>
+<li>随着软件规模增长, 最初的分层可能很快不够.</li>
+<li>软件的架构没有明确体现出软件的业务, 完全不同业务的两个软件之间可能看不出什么区别.</li>
+<li>严格的分层结构中, 每层应只能访问其下临近的一层, 但由于每层分到不同的包, 为了供上一层访问, 访问权限必须声明为public, 这就允许了其他非临近层的访问, 由于进度压力、新手不熟悉代码等原因很可能造成跨层访问. 靠code review是不够的, 靠静态检查虽然可靠一些, 但是修改周期仍然会变长.</li>
+</ul>
+<h3 id="按特性分包-package-by-feature">按特性分包 Package by feature</h3>
+<p>将代码按照涉及业务纵向划分.
+优点</p>
+<ul>
+<li>软件架构明确体现了业务模型, 在某个用例变化时能够快速定位到需要修改的部分.</li>
+</ul>
+<h3 id="端口和适配器-ports-and-adapters">端口和适配器 (Ports and adapters)</h3>
+<p>将代码分为内层 (domain层) 和外层 (infrastructure层) , 只允许外层依赖内层.</p>
+<h3 id="按组件分包-package-by-component">按组件分包 Package by component</h3>
+<p>将对单一粗粒度组件负责的代码放置到一个包中 (实践上, 一般包含业务逻辑代码和数据持久化代码) , 保持接口和粗粒度组件的分离, 粗粒度组件作为整体通过一个整洁的接口向外提供服务, 而内部则有多个遵循依赖规则的二级组件构成, 这些二级组件成为大组件的实现细节.</p>
+<h3 id="重要的细节-访问权限">重要的细节: 访问权限</h3>
+<p>以上四种方法的实质区别, 其实可以说是在于代码访问权限的划分. 应当避免无理由地将访问权限设置为 public, 否则, 分包就退化为了单纯的组织 (Organization) 形式而非封装 (Encapsulation) 手段. 应当合理的设置访问权限, 利用编译器来保证架构遵守依赖规则, 好过依赖开发者自律和编译后检查工具.</p>
+<h3 id="其他解耦模式举例">其他解耦模式举例</h3>
+<ul>
+<li>OSGi</li>
+<li>Java 9 的模块系统</li>
+<li>将代码划分到不同的代码树</li>
+</ul>
+</article><section class="article labels"><a class="category" href=/categories/%E6%8A%80%E6%9C%AF/>技术</a><a class="category" href=/categories/%E7%AC%94%E8%AE%B0/>笔记</a><a class="tag" href=/tags/%E6%9E%B6%E6%9E%84/>架构</a></section><div id="bottom-sticky">
+    <a id="gototop"></a>
+</div></div><section class="article navigation"><p><a class="link" href="/notes/clean-architecture/20-29-architecture-2/"><span class="li">&rarr;</span>[Clean Architecture] 20~29. 架构 (二)</a></p></section></div><section id="footer" class="footer"><div class="footer-wrap">
+    <p class="copyright">©2020 bluepix</p>
+    <p class="powerby"><span>Powered by </span><a href="https://gohugo.io" 
+        target="_blank">Hugo</a><span> and the </span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank">Notepadium</a></p>
+</div></section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body,
+            {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}
+                ]
+            });"></script><script src="/js/core.min.d277a71083e816b2b5794f63f0eea3bee9edd721a15230b36dd72da87f0fc9323a7dfc016c210053ace59c7a99c18fe4.js" integrity="sha384-0nenEIPoFrK1eU9j8O6jvunt1yGhUjCzbdctqH8PyTI6ffwBbCEAU6zlnHqZwY/k"></script></div>
+</body>
+
+</html>

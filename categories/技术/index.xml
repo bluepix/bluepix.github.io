@@ -7,7 +7,7 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>©2020 bluepix</copyright>
-    <lastBuildDate>Tue, 07 Apr 2020 14:03:55 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 07 Apr 2020 14:06:15 +0800</lastBuildDate>
     
         <atom:link href="/categories/%E6%8A%80%E6%9C%AF/index.xml" rel="self" type="application/rss+xml" />
     
@@ -39,6 +39,16 @@
       
       <guid>/posts/make-mp-computer-correctly/</guid>
       <description>注： 本文译自 Leslie Lamport 发表于 1979 年 9 月的 IEEE Transactions on Computers 上的文章 How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs, 其重要意义在于正式定义了顺序一致性. Lamport 于 2013 年获图灵奖, 其获奖成就之一就</description>
+      
+    </item>
+    
+    <item>
+      <title>[Clean Architecture] 30~34. 细节及其它</title>
+      <link>/notes/clean-architecture/30-34-details-others/</link>
+      <pubDate>Tue, 07 Apr 2020 14:06:15 +0800</pubDate>
+      
+      <guid>/notes/clean-architecture/30-34-details-others/</guid>
+      <description>数据库是细节 数据结构 (structure) 或说数据模型 (model) 对于系统架构是至关重要的. 关系型数据库的流行很大程度上得益于磁盘的存在, 随着技术演进, 内存可能最终代替磁</description>
       
     </item>
     
