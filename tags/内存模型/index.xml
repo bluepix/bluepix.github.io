@@ -13,16 +13,6 @@
     
     
     <item>
-      <title>[JCIP] 16.Java 内存模型</title>
-      <link>/notes/jcip/jcip-16-jmm/</link>
-      <pubDate>Fri, 03 Apr 2020 23:21:47 +0800</pubDate>
-      
-      <guid>/notes/jcip/jcip-16-jmm/</guid>
-      <description>什么是内存模型 乱序执行 乱序 (out of order) 执行来源于编译器、运行时和硬件的优化, 例如: 编译器可能产生与程序定义顺序不同的指令序列 可能将变量保存在寄存器</description>
-      
-    </item>
-    
-    <item>
       <title>Java 内存模型入门</title>
       <link>/posts/on-jmm/</link>
       <pubDate>Mon, 16 Mar 2020 08:28:56 +0800</pubDate>
@@ -39,6 +29,16 @@
       
       <guid>/posts/make-mp-computer-correctly/</guid>
       <description>注： 本文译自 Leslie Lamport 发表于 1979 年 9 月的 IEEE Transactions on Computers 上的文章 How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs, 其重要意义在于正式定义了顺序一致性. Lamport 于 2013 年获图灵奖, 其获奖成就之一就</description>
+      
+    </item>
+    
+    <item>
+      <title>[JCIP] 16.Java 内存模型</title>
+      <link>/notes/jcip/jcip-16-jmm/</link>
+      <pubDate>Fri, 03 Apr 2020 23:21:47 +0800</pubDate>
+      
+      <guid>/notes/jcip/jcip-16-jmm/</guid>
+      <description>什么是内存模型 乱序执行 乱序 (out of order) 执行来源于编译器、运行时和硬件的优化, 例如: 编译器可能产生与程序定义顺序不同的指令序列 可能将变量保存在寄存器</description>
       
     </item>
     

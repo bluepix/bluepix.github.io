@@ -18,7 +18,17 @@
       <pubDate>Sat, 04 Apr 2020 10:20:29 +0800</pubDate>
       
       <guid>/posts/java-concurrency-q-n-a/</guid>
-      <description>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答. 持续补充中&amp;hellip; Q: 并发编程要什么? A: 并发编程希望得到 安全性 (Safety): 坏事不会发生</description>
+      <description>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答. 希望以问答的形式把 Java 并发编程中的一些概念串联起来, 并尽力用几句话把它们讲清楚. 持续</description>
+      
+    </item>
+    
+    <item>
+      <title>Java 内存模型入门</title>
+      <link>/posts/on-jmm/</link>
+      <pubDate>Mon, 16 Mar 2020 08:28:56 +0800</pubDate>
+      
+      <guid>/posts/on-jmm/</guid>
+      <description>引言 Java 内存模型 (Java Memory Model, JMM) 是 Java 并发编程中一个较为底层的话题, Java 并发编程中的各种上层策略, 如安全发布 (Safe publication)、使用同步 (synchronization) 等, 其有</description>
       
     </item>
     
@@ -169,16 +179,6 @@
       
       <guid>/notes/jcip/jcip-00-01-intro/</guid>
       <description>总体思路 机制和规则 机制 (mechanisms): Java 语言为支持并发编程特性提供了各种底层机制, 如同步、条件等; 规则 (policies): Java 编程人员需要的应用程序级别的协议或规则. 底层机制</description>
-      
-    </item>
-    
-    <item>
-      <title>Java 内存模型入门</title>
-      <link>/posts/on-jmm/</link>
-      <pubDate>Mon, 16 Mar 2020 08:28:56 +0800</pubDate>
-      
-      <guid>/posts/on-jmm/</guid>
-      <description>引言 Java 内存模型 (Java Memory Model, JMM) 是 Java 并发编程中一个较为底层的话题, Java 并发编程中的各种上层策略, 如安全发布 (Safe publication)、使用同步 (synchronization) 等, 其有</description>
       
     </item>
     

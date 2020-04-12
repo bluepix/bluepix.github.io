@@ -12,8 +12,9 @@
     <div class="base-body"><section id="header" class="site header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">诗川的笔记</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/posts">文章</a><a class="nav item" href="/notes">笔记</a><a class="nav item" href="/categories/">分类</a><a class="nav item" href="/tags/">标签</a></nav></div></span></div><div class="site slogan"><span class="title">从未长大, 从未停止成长</span></div></section><div id="content"><div class="article-container"><section class="article header">
-    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><div class="reset-header" style="--start:0"></div><p><strong>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答.</strong><br>
-持续补充中&hellip;</p>
+    <h1 class="article title">Java 并发编程问答</h1><p class="article date">2020-04-04</p></section><article class="article markdown-body"><div class="reset-header" style="--start:0"></div><p><strong>关于 Java 并发编程的一些 (尽可能短的) 问题 (尽可能短) 的回答.</strong></p>
+<p>希望以问答的形式把 Java 并发编程中的一些概念串联起来, 并尽力用几句话把它们讲清楚.<br>
+持续补充修正中&hellip;</p>
 <hr>
 <p><strong>Q:</strong> 并发编程要什么?<br>
 <strong>A:</strong> 并发编程希望得到</p>
@@ -145,10 +146,10 @@
 <strong>A:</strong> SC 模型不适合实现 (对优化做了太多限制), 事实上也不适合使用 (没有消除数据竞争, 经常错误使用). 但是作为最符合自然的思维习惯的内存模型, 非常适用于程序的设计和推导. JMM 的设计者认为, 数据竞争是程序错误的渊薮, 良好设计的程序应当避免数据竞争, 因此 JMM 的目标很恰当的设定为, 为没有数据竞争的程序提供 SC 执行保证.</p>
 <hr>
 <p><strong>Q:</strong> Happens-before 关系? Synchronizes-with 关系? Synchronization 顺序? 有点儿乱&hellip;<br>
-<strong>A:</strong> 实际上还有一个不大起眼的概念: 程序顺序. 逐一说明:</p>
+<strong>A:</strong> 实际上还有一个不大起眼的概念: 程序顺序. 下面逐一说明:</p>
 <ul>
-<li>程序顺序 (Program Order): 单个线程的程序定义的操作执行顺序.</li>
-<li>同步操作 (synchronization action): 在程序执行的所有操作 (action) 中, 有一些比较特殊的, 称为同步操作, 包括
+<li><strong>程序顺序 (Program Order)</strong>: 单个线程的程序定义的操作执行顺序.</li>
+<li><strong>同步操作 (synchronization action)</strong>: 在程序执行的所有操作 (action) 中, 有一些比较特殊的, 称为同步操作, 包括
 <ul>
 <li>Volatile 读: 对 volatile 变量的读操作</li>
 <li>Volatile 写: 对 volatile 变量的写操作</li>
@@ -158,8 +159,8 @@
 <li>启动线程的操作和观察到线程结束的操作</li>
 </ul>
 </li>
-<li>Synchronization 顺序: Synchronization 顺序只针对同步操作. 不太准确的说, 同步操作像标兵, 定义了一次执行的顺序框架. 和 SC 模型不同, 某次执行的全部操作上并不存在全序关系, 但是其全部同步操作上是存在一个全序关系的, 这个全序关系就叫 Synchronization 顺序. 就是说, 对于每一次执行, 对于任意同步操作 A 和 B, 可以说 A 在 B 之前, 或者相反. 对于同一个线程上的同步操作, Synchronization 顺序和程序顺序一致.</li>
-<li>Synchronizes-with 关系: 基于 synchronization 顺序, 结合某些规则, 可以确定同步操作之间的一个偏序关系, 就是 synchronizes-with 观察, 包括
+<li><strong>Synchronization 顺序</strong>: Synchronization 顺序只针对同步操作. 不太准确的说, 同步操作像标兵, 定义了一次执行的顺序框架. 和 SC 模型不同, 某次执行的全部操作上并不存在全序关系, 但是其全部同步操作上是存在一个全序关系的, 这个全序关系就叫 Synchronization 顺序. 就是说, 对于每一次执行, 对于任意同步操作 A 和 B, 可以说 A 在 B 之前, 或者相反. 对于同一个线程上的同步操作, Synchronization 顺序和程序顺序一致.</li>
+<li><strong>Synchronizes-with 关系</strong>: 基于 synchronization 顺序, 结合某些规则, 可以确定同步操作之间的一个偏序关系, 就是 synchronizes-with 观察, 包括
 <ul>
 <li>对 monitor m 的 unlock $\xrightarrow{sw}$ 后续对 m 的 lock</li>
 <li>对 volatille 变量 v 的写操作 $\xrightarrow{sw}$ 后续对 v 的读操作</li>
@@ -169,15 +170,15 @@
 <li>对每个变量赋默认值的操作 $\xrightarrow{sw}$ 任意线程的第一个操作</li>
 </ul>
 </li>
-<li>Constructor-finalizer 顺序: 这个顺序在 JMM 中单独列出, 是指一个对象的构造方法的结束先于其 finalizer 的开始.</li>
-<li>Happens-before 关系: 程序顺序、synchronizes-with 关系、constructor-finalizer 顺序的可传递闭包 (transitive closure), 也就是说, happens-before 包含了以上三个关系的并集, 再并上全部可以借由间接推导出的先后关系.</li>
+<li><strong>Constructor-finalizer 顺序</strong>: 这个顺序在 JMM 中单独列出, 是指一个对象的构造方法的结束先于其 finalizer 的开始.</li>
+<li><strong>Happens-before 关系</strong>: 程序顺序、synchronizes-with 关系、constructor-finalizer 顺序的可传递闭包 (transitive closure), 也就是说, happens-before 包含了以上三个关系的并集, 再并上全部可以借由间接推导出的先后关系.</li>
 </ul>
 <hr>
 <p><strong>Q:</strong> Happens-before 关系对我们写程序有什么实际意义?<br>
 <strong>A:</strong> JLS 基于 happens-before 关系定义了一个过渡的内存模型, 称为 Happens-before 模型 (HBMM). 虽然 HBMM 不等于 JMM, 但是 JMM 是比 HBMM 更为严格的模型, 所以 HBMM 提供的保证, JMM 都能提供, 包括两点:</p>
 <ul>
-<li>对于非 volatile 变量, 读操作 R 能够观察到的写操作 W 写入的值, 要求在 happens-before 定义的顺序上, R 不在 W 之后, 并且 W 和 R 中间没有别的写操作 (注意 R 不在 W 之后包含了两种可能, 一是 W 在 R 之前, 二是 W 和 R 之间没有 happens-before 关系)</li>
-<li>对于 volatile 变量, 读操作 R 可以观察到在 synchronization 顺序上的前一次写操作</li>
+<li>对于非 volatile 变量, 读操作 R 能够观察到的写操作 W 写入的值, 要求在 happens-before 定义的顺序上, R 不在 W 之后, 并且 W 和 R 中间没有别的写操作 (注意 R 不在 W 之后包含了两种可能, 一是 W 在 R 之前, 二是 W 和 R 之间没有 happens-before 关系).</li>
+<li>对于 volatile 变量, 读操作 R 可以观察到在 synchronization 顺序上的前一次写操作.</li>
 </ul>
 <hr>
 <p><strong>Q:</strong> 什么是死锁?<br>
